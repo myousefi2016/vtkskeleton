@@ -1,6 +1,11 @@
 bin/*
-build/*
+build/CMakeFiles/*
+build/cmake_install.cmake
+build/CMakeCache.txt
+build/Makefile
 cmake/*
 include/*
 lib/*
 share/*
+
+*.exe
