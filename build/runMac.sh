@@ -2,4 +2,4 @@
 
 make
 
-./Cone
+./Skeleton

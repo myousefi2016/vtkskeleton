@@ -2,4 +2,4 @@
 
 make
 
-call Cone.exe
+call Skeleton.exe
