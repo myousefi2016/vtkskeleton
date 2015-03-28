@@ -1,3 +1,11 @@
-@call cmakeWindows.bat
+@echo off
 
-@call runWindows.bat
+@rd /s /q CMakeFiles
+@del cmake_install.cmake
+@del CMakeCache.txt
+@del Makefile
+
+cmake -G "MSYS Makefiles" -DVTK_DIR:PATH=D:\ComputerGraphics\VTK62 ..
+make
+
+call Skeleton.exe
