@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 
 #include <vtkConeSource.h>
 #include <vtkPolyData.h>
@@ -10,11 +11,8 @@
 #include <vtkRenderWindowInteractor.h>
 
 // file legacy load
-#include <vtkGenericDataObjectReader.h>
-#include <vtkStructuredGrid.h>
-#include <vtkSmartPointer.h>
-#include <vtkPolyData.h>
-#include <string>
+#include <vtkStructuredPointsReader.h>
+#include <vtkImageDataGeometryFilter.h>
 
 // textActor
 #include <vtkTextActor.h>
@@ -32,30 +30,20 @@ int main(int, char *[])
 	string vesselsSkelPath = dataDirPath + "vessels_skel.vtk";
 
 	// Reading legacy data
-	//vtkSmartPointer<vtkGenericDataObjectReader> reader = vtkSmartPointer<vtkGenericDataObjectReader>::New();
-	//reader->SetFileName(vesselsDataPath.c_str());
-	//reader->Update();
+	// Read the file
+	vtkSmartPointer<vtkStructuredPointsReader> reader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+	reader->SetFileName(vesselsSegPath.c_str());
+	reader->Update();
  
-	// All of the standard data types can be checked and obtained like this:
-	//if(reader->IsFilePolyData())
- //   {
-	//	cout << "output is a polydata" << endl;
-	//	vtkPolyData* output = reader->GetPolyDataOutput();
-	//	cout << "output has " << output->GetNumberOfPoints() << " points." << endl;
- //   }
-	//else
-	//{
-	//	cout << "not poly data";
-	//}
-
-	//Create a cone
-	vtkSmartPointer<vtkConeSource> coneSource =	vtkSmartPointer<vtkConeSource>::New();
-	coneSource->Update();
-
-	//Create a mapper and actor
+	vtkSmartPointer<vtkImageDataGeometryFilter> geometryFilter = vtkSmartPointer<vtkImageDataGeometryFilter>::New();
+	geometryFilter->SetInputConnection(reader->GetOutputPort());
+	geometryFilter->Update();
+ 
+	// Visualize
+	// Create a mapper and actor
 	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	mapper->SetInputConnection(coneSource->GetOutputPort());
-
+	mapper->SetInputConnection(geometryFilter->GetOutputPort());
+ 
 	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
 	actor->SetMapper(mapper);
 
