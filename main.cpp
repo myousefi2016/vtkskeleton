@@ -22,6 +22,9 @@
 #include <vtkCallbackCommand.h>
 #include <vtkCommand.h>
 
+// Marching cube algorithm
+#include <vtkContourFilter.h>
+
 using namespace std;
 
 // Functions
@@ -40,14 +43,74 @@ vtkSmartPointer<vtkCallbackCommand> keypressCallback = vtkSmartPointer<vtkCallba
 // Menu
 vtkSmartPointer<vtkTextActor> textActor = vtkSmartPointer<vtkTextActor>::New();
 
-int main(int, char *[])
-{
-	// Paths
-	string dataDirPath = "data/";
-	string vesselsDataPath = dataDirPath + "vessels_data.vtk";
-	string vesselsSegPath = dataDirPath + "vessels_seg.vtk";
-	string vesselsSkelPath = dataDirPath + "vessels_skel.vtk";
+// Paths
+string myMacPath = "/Users/erickl/Documents/computergraphics/build/data/"; // TODO Find a more general approach...
+string windowsPath = "";
 
+string dataDirPath = myMacPath; // TODO In windows, change to 'windowsPath' above.
+string vesselsDataPath = dataDirPath + "vessels_data.vtk";
+string vesselsSegPath = dataDirPath + "vessels_seg.vtk";
+string vesselsSkelPath = dataDirPath + "vessels_skel.vtk";
+
+/*
+ * Use of marching cube algorithm to render skeleton image. Note to self: use skeleton data.
+ * TODO: Figure out if I should have the skeleton image and segment image in same window or not?
+ */
+void renderSkeletonImage()
+{
+	// TODO I believe this function should be a lot like 'renderSegmentedImage()'.
+}
+
+/*
+ * Use of marching cube algorithm to render the segemented image as instructed (...Or an effort to do it).
+ * Note to self: use segment data
+ * TODO: Figure out if I should have the skeleton image and segment image in same window or not?
+ *       What should I reuse in the functions? Readers? mappers?
+ */
+void renderSegmentedImage() // TODO 2015-03-31: YIEALDS SEGMENTATION FAULT 11. FOR NOW UNSOLVED...
+{
+	vtkSmartPointer<vtkRenderer> segmentRenderer = vtkSmartPointer<vtkRenderer>::New();
+	segmentRenderer->SetBackground(1.0, 1.0, 1.0);
+
+	vtkSmartPointer<vtkRenderWindow> segmentRenderWindow = vtkSmartPointer<vtkRenderWindow>::New();
+	segmentRenderWindow->AddRenderer(segmentRenderer);
+
+	// Create reader
+	vtkSmartPointer<vtkStructuredPointsReader> spReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+	spReader->SetFileName(vesselsSegPath.c_str());
+	spReader->Update();
+
+	// Create contour filter
+	vtkSmartPointer<vtkContourFilter> contourFilter = vtkSmartPointer<vtkContourFilter>::New();
+	contourFilter->SetInputConnection(spReader->GetOutputPort());
+	contourFilter->Update();
+
+	// TODO Can we use the same mapper for several filters?
+	vtkSmartPointer<vtkPolyDataMapper> pdMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	pdMapper->SetInputConnection(contourFilter->GetOutputPort());
+
+	// Create actors
+	vtkSmartPointer<vtkActor> renderSegmentActor = vtkSmartPointer<vtkActor>::New();
+	renderSegmentActor->SetMapper(pdMapper);
+	segmentRenderer->AddActor(renderSegmentActor);
+
+	vtkSmartPointer<vtkTextActor> segmentTextActor = vtkSmartPointer<vtkTextActor>::New();
+	segmentTextActor->GetTextProperty()->SetFontSize(16);
+	segmentTextActor->SetDisplayPosition(10, 10);
+	segmentRenderer->AddActor2D(segmentTextActor);
+	segmentTextActor->SetInput("Segmented Image");
+	segmentTextActor->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
+
+	//Start
+	segmentRenderer->Render();
+
+}
+
+/*
+ * The code we got from Danilo Babbin. Uses vessels data file.
+ */
+void renderDataImage()
+{
 	// a) Load VTK files and make the basic menu
 	// Read legacy data from .vtk files
 	reader->SetFileName(vesselsDataPath.c_str());
@@ -84,6 +147,13 @@ int main(int, char *[])
 	//Render and interact
 	renderWindow->Render();
 	renderWindowInteractor->Start();
+}
+
+int main(int, char *[])
+{
+	//renderDataImage();
+	renderSegmentedImage();
+	//renderSkeletonImage();
   
 	return EXIT_SUCCESS;
 }

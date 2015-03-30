@@ -4,4 +4,4 @@ cmake -G "Unix Makefiles" -DVTK_DIR:PATH=/Users/erickl/Documents/computergraphic
 
 make
 
-./Skeleton
+./Skeleton.app/Contents/MacOS/Skeleton
