@@ -18,8 +18,14 @@
 #include <vtkTextActor.h>
 #include <vtkTextProperty.h>
 
+// key pressed
+#include <vtkCallbackCommand.h>
+#include <vtkCommand.h>
 
 using namespace std;
+
+// Functions
+void KeypressCallbackFunction (vtkObject* caller, long unsigned int eventId, void* clientData, void* callData);
 
 int main(int, char *[])
 {
@@ -29,10 +35,10 @@ int main(int, char *[])
 	string vesselsSegPath = dataDirPath + "vessels_seg.vtk";
 	string vesselsSkelPath = dataDirPath + "vessels_skel.vtk";
 
-	// Reading legacy data
-	// Read the file
+	// a) Load VTK files and make the basic menu
+	// Read legacy data from .vtk files
 	vtkSmartPointer<vtkStructuredPointsReader> reader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-	reader->SetFileName(vesselsSegPath.c_str());
+	reader->SetFileName(vesselsDataPath.c_str());
 	reader->Update();
  
 	vtkSmartPointer<vtkImageDataGeometryFilter> geometryFilter = vtkSmartPointer<vtkImageDataGeometryFilter>::New();
@@ -54,6 +60,12 @@ int main(int, char *[])
 	vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
 	renderWindowInteractor->SetRenderWindow(renderWindow);
 
+	// b) Planes for different views
+	// Handle key press
+	vtkSmartPointer<vtkCallbackCommand> keypressCallback = vtkSmartPointer<vtkCallbackCommand>::New();
+	keypressCallback->SetCallback(KeypressCallbackFunction);
+	renderWindowInteractor->AddObserver(vtkCommand::KeyPressEvent, keypressCallback);
+
 	//Add the actors to the scene
 	renderer->AddActor(actor);
 	renderer->SetBackground(1.0, 1.0, 1.0);
@@ -70,5 +82,12 @@ int main(int, char *[])
 	renderWindow->Render();
 	renderWindowInteractor->Start();
   
-  return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
+}
+
+void KeypressCallbackFunction ( vtkObject* caller, long unsigned int vtkNotUsed(eventId), void* vtkNotUsed(clientData), void* vtkNotUsed(callData) )
+{
+	vtkRenderWindowInteractor *iren = static_cast<vtkRenderWindowInteractor*>(caller);
+ 
+	std::cout << "Pressed: " << iren->GetKeySym() << std::endl;
 }
