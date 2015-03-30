@@ -27,6 +27,19 @@ using namespace std;
 // Functions
 void KeypressCallbackFunction (vtkObject* caller, long unsigned int eventId, void* clientData, void* callData);
 
+// Variables, to make code simple to read
+vtkSmartPointer<vtkStructuredPointsReader> reader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+vtkSmartPointer<vtkImageDataGeometryFilter> geometryFilter = vtkSmartPointer<vtkImageDataGeometryFilter>::New();
+vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
+vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
+vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
+// Key press
+vtkSmartPointer<vtkCallbackCommand> keypressCallback = vtkSmartPointer<vtkCallbackCommand>::New();
+// Menu
+vtkSmartPointer<vtkTextActor> textActor = vtkSmartPointer<vtkTextActor>::New();
+
 int main(int, char *[])
 {
 	// Paths
@@ -37,32 +50,23 @@ int main(int, char *[])
 
 	// a) Load VTK files and make the basic menu
 	// Read legacy data from .vtk files
-	vtkSmartPointer<vtkStructuredPointsReader> reader = vtkSmartPointer<vtkStructuredPointsReader>::New();
 	reader->SetFileName(vesselsDataPath.c_str());
 	reader->Update();
  
-	vtkSmartPointer<vtkImageDataGeometryFilter> geometryFilter = vtkSmartPointer<vtkImageDataGeometryFilter>::New();
 	geometryFilter->SetInputConnection(reader->GetOutputPort());
 	geometryFilter->Update();
  
 	// Visualize
 	// Create a mapper and actor
-	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 	mapper->SetInputConnection(geometryFilter->GetOutputPort());
- 
-	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
 	actor->SetMapper(mapper);
 
 	//Create a renderer, render window, and interactor
-	vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
-	vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
 	renderWindow->AddRenderer(renderer);
-	vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
 	renderWindowInteractor->SetRenderWindow(renderWindow);
 
 	// b) Planes for different views
 	// Handle key press
-	vtkSmartPointer<vtkCallbackCommand> keypressCallback = vtkSmartPointer<vtkCallbackCommand>::New();
 	keypressCallback->SetCallback(KeypressCallbackFunction);
 	renderWindowInteractor->AddObserver(vtkCommand::KeyPressEvent, keypressCallback);
 
@@ -71,7 +75,6 @@ int main(int, char *[])
 	renderer->SetBackground(1.0, 1.0, 1.0);
 
 	// Menu vtkTextActor
-	vtkSmartPointer<vtkTextActor> textActor = vtkSmartPointer<vtkTextActor>::New();
 	textActor->GetTextProperty()->SetFontSize(16);
 	textActor->SetDisplayPosition(10, 10);
 	renderer->AddActor2D(textActor);
@@ -85,9 +88,19 @@ int main(int, char *[])
 	return EXIT_SUCCESS;
 }
 
-void KeypressCallbackFunction ( vtkObject* caller, long unsigned int vtkNotUsed(eventId), void* vtkNotUsed(clientData), void* vtkNotUsed(callData) )
+void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(eventId), void* vtkNotUsed(clientData), void* vtkNotUsed(callData))
 {
 	vtkRenderWindowInteractor *iren = static_cast<vtkRenderWindowInteractor*>(caller);
  
-	std::cout << "Pressed: " << iren->GetKeySym() << std::endl;
+	string key = iren->GetKeySym();
+
+	if (key == "s") {
+		cout << "saggital, do something" << endl;
+	}
+	if (key == "t") {
+		cout << "transversal, do something" << endl;
+	}
+	if (key == "c") {
+		cout << "coronal, do something" << endl;
+	}
 }
