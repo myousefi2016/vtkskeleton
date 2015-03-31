@@ -146,8 +146,8 @@ void renderDataImage()
 
 int main(int, char *[])
 {
-	//renderDataImage();
-	renderSegmentedImage();
+	renderDataImage();
+	//renderSegmentedImage();
 	//renderSkeletonImage();
   
 	return EXIT_SUCCESS;
@@ -159,13 +159,19 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
  
 	string key = iren->GetKeySym();
 
+	cout << "Pressed" << key << endl;
+
 	if (key == "s") {
-		cout << "saggital, do something" << endl;
+		cout << "sagittal, do something" << endl;
 	}
 	if (key == "t") {
 		cout << "transversal, do something" << endl;
 	}
 	if (key == "c") {
 		cout << "coronal, do something" << endl;
+	}
+		cout << "scroll: zoom in" << endl;
+	}
+		cout << "scroll: zoom out" << endl;
 	}
 }
