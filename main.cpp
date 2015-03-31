@@ -44,10 +44,7 @@ vtkSmartPointer<vtkCallbackCommand> keypressCallback = vtkSmartPointer<vtkCallba
 vtkSmartPointer<vtkTextActor> textActor = vtkSmartPointer<vtkTextActor>::New();
 
 // Paths
-string myMacPath = "/Users/erickl/Documents/computergraphics/build/data/"; // TODO Find a more general approach...
-string windowsPath = "";
-
-string dataDirPath = myMacPath; // TODO In windows, change to 'windowsPath' above.
+string dataDirPath = "build/data/"; 
 string vesselsDataPath = dataDirPath + "vessels_data.vtk";
 string vesselsSegPath = dataDirPath + "vessels_seg.vtk";
 string vesselsSkelPath = dataDirPath + "vessels_skel.vtk";
@@ -69,12 +66,6 @@ void renderSkeletonImage()
  */
 void renderSegmentedImage() // TODO 2015-03-31: YIEALDS SEGMENTATION FAULT 11. FOR NOW UNSOLVED...
 {
-	vtkSmartPointer<vtkRenderer> segmentRenderer = vtkSmartPointer<vtkRenderer>::New();
-	segmentRenderer->SetBackground(1.0, 1.0, 1.0);
-
-	vtkSmartPointer<vtkRenderWindow> segmentRenderWindow = vtkSmartPointer<vtkRenderWindow>::New();
-	segmentRenderWindow->AddRenderer(segmentRenderer);
-
 	// Create reader
 	vtkSmartPointer<vtkStructuredPointsReader> spReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
 	spReader->SetFileName(vesselsSegPath.c_str());
@@ -89,6 +80,9 @@ void renderSegmentedImage() // TODO 2015-03-31: YIEALDS SEGMENTATION FAULT 11. F
 	vtkSmartPointer<vtkPolyDataMapper> pdMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 	pdMapper->SetInputConnection(contourFilter->GetOutputPort());
 
+	vtkSmartPointer<vtkRenderer> segmentRenderer = vtkSmartPointer<vtkRenderer>::New();
+	segmentRenderer->SetBackground(1.0, 1.0, 1.0);
+	
 	// Create actors
 	vtkSmartPointer<vtkActor> renderSegmentActor = vtkSmartPointer<vtkActor>::New();
 	renderSegmentActor->SetMapper(pdMapper);
@@ -97,17 +91,19 @@ void renderSegmentedImage() // TODO 2015-03-31: YIEALDS SEGMENTATION FAULT 11. F
 	vtkSmartPointer<vtkTextActor> segmentTextActor = vtkSmartPointer<vtkTextActor>::New();
 	segmentTextActor->GetTextProperty()->SetFontSize(16);
 	segmentTextActor->SetDisplayPosition(10, 10);
-	segmentRenderer->AddActor2D(segmentTextActor);
 	segmentTextActor->SetInput("Segmented Image");
 	segmentTextActor->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
+	segmentRenderer->AddActor2D(segmentTextActor);
 
+	vtkSmartPointer<vtkRenderWindow> segmentRenderWindow = vtkSmartPointer<vtkRenderWindow>::New();
+	segmentRenderWindow->AddRenderer(segmentRenderer);
 	//Start
-	segmentRenderer->Render();
+	segmentRenderWindow->Render();
 
 }
 
 /*
- * The code we got from Danilo Babbin. Uses vessels data file.
+ * Uses vessels data file.
  */
 void renderDataImage()
 {
