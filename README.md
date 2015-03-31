@@ -12,3 +12,11 @@ The goal of the project is to construct a skeleton (as in Fig. 1) from skeleton 
 The data set supplied represents a part of blood vessel structure. One data set is the original data (“vessels_data.vtk”), the second is a segmented blood vessel tree (“vessels_seg.vtk”), and the third is the skeleton image (“vessels_skel.vtk”) of the segmented data (segmented and skeleton data are binary, which means that pixels with value 0 are background and pixels with any other value represent the object). 
 
 NOTICE: the interaction in VTK is implemented using keys. You have free choice of keys. In other words, to call certain functionality you can use any key you wish (however, what each of the keys does will have to be printed on the screen menu). 
+
+
+Requirements
+----------------
+There should be placed 3 .vtk files in the main folder (for MacOS) or in 'build' folder (for Windows)
+- vessels_data.vtk
+- vessels_seg.vtk
+- vessels_skel.vtk

@@ -44,10 +44,9 @@ vtkSmartPointer<vtkCallbackCommand> keypressCallback = vtkSmartPointer<vtkCallba
 vtkSmartPointer<vtkTextActor> textActor = vtkSmartPointer<vtkTextActor>::New();
 
 // Paths
-string dataDirPath = "build/data/"; 
-string vesselsDataPath = dataDirPath + "vessels_data.vtk";
-string vesselsSegPath = dataDirPath + "vessels_seg.vtk";
-string vesselsSkelPath = dataDirPath + "vessels_skel.vtk";
+string vesselsDataFile = "vessels_data.vtk";
+string vesselsSegFile = "vessels_seg.vtk";
+string vesselsSkelFile = "vessels_skel.vtk";
 
 /*
  * Use of marching cube algorithm to render skeleton image. Note to self: use skeleton data.
@@ -68,7 +67,7 @@ void renderSegmentedImage() // TODO 2015-03-31: YIEALDS SEGMENTATION FAULT 11. F
 {
 	// Create reader
 	vtkSmartPointer<vtkStructuredPointsReader> spReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-	spReader->SetFileName(vesselsSegPath.c_str());
+	spReader->SetFileName(vesselsSegFile.c_str());
 	spReader->Update();
 
 	// Create contour filter
@@ -109,7 +108,7 @@ void renderDataImage()
 {
 	// a) Load VTK files and make the basic menu
 	// Read legacy data from .vtk files
-	reader->SetFileName(vesselsDataPath.c_str());
+	reader->SetFileName(vesselsDataFile.c_str());
 	reader->Update();
  
 	geometryFilter->SetInputConnection(reader->GetOutputPort());
