@@ -24,6 +24,7 @@
 
 // Marching cube algorithm
 #include <vtkContourFilter.h>
+#include <vtkPolyDataMapper.h>
 
 using namespace std;
 
@@ -38,6 +39,9 @@ vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
 vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
 vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
 vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
+vtkSmartPointer<vtkContourFilter> iso = vtkSmartPointer<vtkContourFilter>::New();
+vtkSmartPointer<vtkPolyDataMapper> isoMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+
 // Key press
 vtkSmartPointer<vtkCallbackCommand> keypressCallback = vtkSmartPointer<vtkCallbackCommand>::New();
 // Menu
@@ -63,42 +67,42 @@ void renderSkeletonImage()
  * TODO: Figure out if I should have the skeleton image and segment image in same window or not?
  *       What should I reuse in the functions? Readers? mappers?
  */
-void renderSegmentedImage() // TODO 2015-03-31: YIEALDS SEGMENTATION FAULT 11. FOR NOW UNSOLVED...
+void renderSegmentedImage() 
 {
 	// Create reader
-	vtkSmartPointer<vtkStructuredPointsReader> spReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-	spReader->SetFileName(vesselsSegFile.c_str());
-	spReader->Update();
+	reader->SetFileName(vesselsSegFile.c_str());
+	reader->Update();
 
 	// Create contour filter
-	vtkSmartPointer<vtkContourFilter> contourFilter = vtkSmartPointer<vtkContourFilter>::New();
-	contourFilter->SetInputConnection(spReader->GetOutputPort());
-	contourFilter->Update();
+	iso->SetInputConnection(reader->GetOutputPort()); 
+	iso->SetValue(0, 128.0f);
+	iso->Update();
+	isoMapper->SetInputConnection(iso->GetOutputPort()); 
+	isoMapper->ScalarVisibilityOff();
 
-	// TODO Can we use the same mapper for several filters?
-	vtkSmartPointer<vtkPolyDataMapper> pdMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	pdMapper->SetInputConnection(contourFilter->GetOutputPort());
-
-	vtkSmartPointer<vtkRenderer> segmentRenderer = vtkSmartPointer<vtkRenderer>::New();
-	segmentRenderer->SetBackground(1.0, 1.0, 1.0);
+	// Create renderer
+	renderer->SetBackground(1.0, 1.0, 1.0);
 	
 	// Create actors
-	vtkSmartPointer<vtkActor> renderSegmentActor = vtkSmartPointer<vtkActor>::New();
-	renderSegmentActor->SetMapper(pdMapper);
-	segmentRenderer->AddActor(renderSegmentActor);
+	actor->SetMapper(isoMapper);
+	renderer->AddActor(actor);
 
-	vtkSmartPointer<vtkTextActor> segmentTextActor = vtkSmartPointer<vtkTextActor>::New();
-	segmentTextActor->GetTextProperty()->SetFontSize(16);
-	segmentTextActor->SetDisplayPosition(10, 10);
-	segmentTextActor->SetInput("Segmented Image");
-	segmentTextActor->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
-	segmentRenderer->AddActor2D(segmentTextActor);
+	textActor->GetTextProperty()->SetFontSize(16);
+	textActor->SetDisplayPosition(10, 10);
+	textActor->SetInput("Segmented Image");
+	textActor->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
+	renderer->AddActor2D(textActor);
 
-	vtkSmartPointer<vtkRenderWindow> segmentRenderWindow = vtkSmartPointer<vtkRenderWindow>::New();
-	segmentRenderWindow->AddRenderer(segmentRenderer);
+	// Create render window
+	renderWindow->AddRenderer(renderer);
+	renderWindowInteractor->SetRenderWindow(renderWindow);
+
+	keypressCallback->SetCallback(KeypressCallbackFunction);
+	renderWindowInteractor->AddObserver(vtkCommand::KeyPressEvent, keypressCallback);
+
 	//Start
-	segmentRenderWindow->Render();
-
+	renderWindow->Render();
+	renderWindowInteractor->Start();
 }
 
 /*
@@ -146,8 +150,8 @@ void renderDataImage()
 
 int main(int, char *[])
 {
-	renderDataImage();
-	//renderSegmentedImage();
+	//renderDataImage();
+	renderSegmentedImage();
 	//renderSkeletonImage();
   
 	return EXIT_SUCCESS;
@@ -159,8 +163,6 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
  
 	string key = iren->GetKeySym();
 
-	cout << "Pressed" << key << endl;
-
 	if (key == "s") {
 		cout << "sagittal, do something" << endl;
 	}
@@ -170,8 +172,10 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	if (key == "c") {
 		cout << "coronal, do something" << endl;
 	}
+	if (key == "plus") {	
 		cout << "scroll: zoom in" << endl;
 	}
+	if (key == "minus") {
 		cout << "scroll: zoom out" << endl;
 	}
 }
