@@ -9,6 +9,7 @@
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
 #include <vtkRenderWindowInteractor.h>
+#include <vtkInteractorStyleTrackballCamera.h>
 
 // file legacy load
 #include <vtkStructuredPointsReader.h>
@@ -26,24 +27,30 @@
 #include <vtkContourFilter.h>
 #include <vtkPolyDataMapper.h>
 
+#include "MyImage3D.h"
+
 using namespace std;
 
 // Functions
+void initVTK();
+void renderVTK();
+void renderDataImage();
+void renderSegmentedImage();
+void renderSkeletonImage();
 void KeypressCallbackFunction (vtkObject* caller, long unsigned int eventId, void* clientData, void* callData);
+
+// VTK window
+vtkSmartPointer<vtkRenderWindow> renderWindow;
+vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor;
 
 // Variables, to make code simple to read
 vtkSmartPointer<vtkStructuredPointsReader> reader = vtkSmartPointer<vtkStructuredPointsReader>::New();
 vtkSmartPointer<vtkImageDataGeometryFilter> geometryFilter = vtkSmartPointer<vtkImageDataGeometryFilter>::New();
 vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
-vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
-vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
-vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
 vtkSmartPointer<vtkContourFilter> iso = vtkSmartPointer<vtkContourFilter>::New();
 vtkSmartPointer<vtkPolyDataMapper> isoMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 
-// Key press
-vtkSmartPointer<vtkCallbackCommand> keypressCallback = vtkSmartPointer<vtkCallbackCommand>::New();
 // Menu
 vtkSmartPointer<vtkTextActor> textActor = vtkSmartPointer<vtkTextActor>::New();
 
@@ -51,6 +58,44 @@ vtkSmartPointer<vtkTextActor> textActor = vtkSmartPointer<vtkTextActor>::New();
 string vesselsDataFile = "vessels_data.vtk";
 string vesselsSegFile = "vessels_seg.vtk";
 string vesselsSkelFile = "vessels_skel.vtk";
+
+
+int main(int, char *[])
+{
+	initVTK();
+
+
+	renderVTK();
+
+	return EXIT_SUCCESS;
+}
+
+void initVTK()
+{
+	renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
+	renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
+
+	vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
+	vtkSmartPointer<vtkInteractorStyleTrackballCamera> interactorStyle = vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
+	
+	renderWindow->AddRenderer(renderer);
+	renderWindow->SetSize(900, 900);
+	renderWindow->SetWindowName("Skeleton Visualisation");
+	
+	// Handle key press
+	vtkSmartPointer<vtkCallbackCommand> keypressCallback = vtkSmartPointer<vtkCallbackCommand>::New();
+	keypressCallback->SetCallback(KeypressCallbackFunction);
+	renderWindowInteractor->AddObserver(vtkCommand::KeyPressEvent, keypressCallback);
+
+	renderWindowInteractor->SetRenderWindow(renderWindow);
+	renderWindowInteractor->SetInteractorStyle(interactorStyle);
+}
+
+void renderVTK()
+{
+	renderWindow->Render();
+	renderWindowInteractor->Start();
+}
 
 /*
  * Use of marching cube algorithm to render skeleton image. Note to self: use skeleton data.
@@ -66,7 +111,7 @@ void renderSkeletonImage()
  * Note to self: use segment data
  * TODO: Figure out if I should have the skeleton image and segment image in same window or not?
  *       What should I reuse in the functions? Readers? mappers?
- */
+ 
 void renderSegmentedImage() 
 {
 	// Create reader
@@ -103,11 +148,11 @@ void renderSegmentedImage()
 	//Start
 	renderWindow->Render();
 	renderWindowInteractor->Start();
-}
+}*/
 
 /*
  * Uses vessels data file.
- */
+ 
 void renderDataImage()
 {
 	// a) Load VTK files and make the basic menu
@@ -146,16 +191,7 @@ void renderDataImage()
 	//Render and interact
 	renderWindow->Render();
 	renderWindowInteractor->Start();
-}
-
-int main(int, char *[])
-{
-	//renderDataImage();
-	renderSegmentedImage();
-	//renderSkeletonImage();
-  
-	return EXIT_SUCCESS;
-}
+}*/
 
 void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(eventId), void* vtkNotUsed(clientData), void* vtkNotUsed(callData))
 {
