@@ -8,15 +8,27 @@
 #ifndef MY_IMAGE_3D
 	#define MY_IMAGE_3D
 
-#define vtkRenderingCore_AUTOINIT 4(vtkInteractionStyle,vtkRenderingFreeType,vtkRenderingFreeTypeOpenGL,vtkRenderingOpenGL)
+#define vtkRenderingCore_AUTOINIT 4(vtkInteractionStyle, vtkRenderingFreeType, vtkRenderingFreeTypeOpenGL, vtkRenderingOpenGL)
 #define vtkRenderingVolume_AUTOINIT 1(vtkRenderingVolumeOpenGL)
 
 #include <assert.h>
 #include <vtkSmartPointer.h>
 #include <vtkImageData.h>
+#include <string>
+
+#include <vtkPolyDataMapper.h>
+#include <vtkStructuredPointsReader.h>
+#include <vtkImageDataGeometryFilter.h>
+#include <vtkActor.h>
+using namespace std;
 
 class MyImage3D
 {
+	vtkSmartPointer<vtkStructuredPointsReader> reader;
+	vtkSmartPointer<vtkImageDataGeometryFilter> geometryFilter;
+	vtkSmartPointer<vtkPolyDataMapper> mapper;
+	vtkSmartPointer<vtkActor> actor;
+
 	public:
 
 		vtkSmartPointer<vtkImageData> vtk_image_data;
@@ -24,6 +36,12 @@ class MyImage3D
 		MyImage3D()
 		{
 			vtk_image_data = vtkSmartPointer<vtkImageData>::New();
+
+			// Data VTK file
+			reader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+			geometryFilter = vtkSmartPointer<vtkImageDataGeometryFilter>::New();
+			mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+			actor = vtkSmartPointer<vtkActor>::New();
 		};
 
 		//If the image is empty return true (1), else return fail (0).
@@ -38,6 +56,8 @@ class MyImage3D
 
 		// Fill in the image with the given value
 		void FillInWith(unsigned short _value);
+
+		vtkSmartPointer<vtkActor> LoadDataImage();
 };
 
 #endif

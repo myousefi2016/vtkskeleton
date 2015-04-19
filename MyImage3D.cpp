@@ -43,7 +43,7 @@ unsigned short& MyImage3D::Index(unsigned int _slices, unsigned int _rows, unsig
 	int dims_xyz[3];
 	this->vtk_image_data->GetDimensions(dims_xyz);
 
-	assert( (((unsigned int)_slices)<dims_xyz[2]) && (((unsigned int)_rows)<dims_xyz[1]) && (((unsigned int)_columns)<dims_xyz[0]) );
+	assert((((unsigned int)_slices) < dims_xyz[2]) && (((unsigned int)_rows) < dims_xyz[1]) && (((unsigned int)_columns) < dims_xyz[0]));
 
 	// Get the pointer to data
 	unsigned short *pointer = (unsigned short*)(this->vtk_image_data->GetScalarPointer());
@@ -65,4 +65,24 @@ void MyImage3D::FillInWith(unsigned short _value)
 			}
 		}
 	}
+}
+
+vtkSmartPointer<vtkActor> MyImage3D::LoadDataImage()
+{
+	
+	// Paths
+	string vesselsDataFile = "vessels_data.vtk";
+	string vesselsSegFile = "vessels_seg.vtk";
+	string vesselsSkelFile = "vessels_skel.vtk";
+
+	reader->SetFileName(vesselsDataFile.c_str());
+	reader->Update();
+ 
+	geometryFilter->SetInputConnection(reader->GetOutputPort());
+	geometryFilter->Update();
+
+	mapper->SetInputConnection(geometryFilter->GetOutputPort());
+	actor->SetMapper(mapper);
+
+	return actor;
 }

@@ -1,5 +1,5 @@
 #include <iostream>
-#include <string>
+#include <sstream>
 
 #include <vtkConeSource.h>
 #include <vtkPolyData.h>
@@ -40,30 +40,68 @@ void renderSkeletonImage();
 void KeypressCallbackFunction (vtkObject* caller, long unsigned int eventId, void* clientData, void* callData);
 
 // VTK window
+vtkSmartPointer<vtkRenderer> renderer;
 vtkSmartPointer<vtkRenderWindow> renderWindow;
 vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor;
 
-// Variables, to make code simple to read
-vtkSmartPointer<vtkStructuredPointsReader> reader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-vtkSmartPointer<vtkImageDataGeometryFilter> geometryFilter = vtkSmartPointer<vtkImageDataGeometryFilter>::New();
-vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
 vtkSmartPointer<vtkContourFilter> iso = vtkSmartPointer<vtkContourFilter>::New();
 vtkSmartPointer<vtkPolyDataMapper> isoMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 
 // Menu
 vtkSmartPointer<vtkTextActor> textActor = vtkSmartPointer<vtkTextActor>::New();
 
-// Paths
-string vesselsDataFile = "vessels_data.vtk";
-string vesselsSegFile = "vessels_seg.vtk";
-string vesselsSkelFile = "vessels_skel.vtk";
-
 
 int main(int, char *[])
 {
 	initVTK();
 
+	// Example of creating a new 3-D image and initializing it with 0:
+	MyImage3D image;
+	image.Set(10,10,10);
+	image.FillInWith(0);
+	cout << "3-D image created and filled with 0." << endl;
+
+	//Put some voxel values in the image:
+	image.Index(1,2,3) = 15;
+	image.Index(4,2,2) = 5;
+	image.Index(8,6,3) = 7;
+	image.Index(5,6,8) = 20000;
+	image.Index(3,3,3) = 1;
+	image.Index(1,1,1) = 15;
+
+	// Example of going through the whole 3-D image and finding the maximum value:
+	unsigned short maximum;
+	maximum = image.Index(0,0,0);
+	int dims_xyz[3];
+	image.vtk_image_data->GetDimensions(dims_xyz);
+	for (int s = 0; s < dims_xyz[2]; s++)
+	{
+		for (int r = 0; r < dims_xyz[1]; r++)
+		{
+			for (int c = 0; c<dims_xyz[0]; c++)
+			{
+				if (image.Index(s,r,c) > maximum)
+					maximum = image.Index(s,r,c);
+			}
+		}
+	}
+	cout << "Maximum value in the 3D image is " << ((int)(maximum)) << "." << endl;
+
+	//----- Print maximum value on the screen -----
+	vtkSmartPointer<vtkTextActor> maximumText = vtkSmartPointer<vtkTextActor>::New();
+	
+	maximumText->GetTextProperty()->SetFontSize(16);
+	maximumText->GetTextProperty()->SetColor(1.0, 1.0, 0.0);
+	maximumText->SetDisplayPosition(15, 5);
+	ostringstream text;
+	text << "maximum = " << ((int)(maximum)) << endl;
+	text << ends;
+
+	maximumText->SetInput(text.str().c_str());
+	renderer->AddActor2D(maximumText);
+
+	vtkSmartPointer<vtkActor> dataImageActor = image.LoadDataImage();
+	renderer->AddActor(dataImageActor);
 
 	renderVTK();
 
@@ -74,12 +112,14 @@ void initVTK()
 {
 	renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
 	renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
+	renderer = vtkSmartPointer<vtkRenderer>::New();
 
-	vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
 	vtkSmartPointer<vtkInteractorStyleTrackballCamera> interactorStyle = vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
 	
+	renderer->SetBackground(1.0, 1.0, 1.0);
+
 	renderWindow->AddRenderer(renderer);
-	renderWindow->SetSize(900, 900);
+	renderWindow->SetSize(700, 700);
 	renderWindow->SetWindowName("Skeleton Visualisation");
 	
 	// Handle key press
@@ -97,14 +137,6 @@ void renderVTK()
 	renderWindowInteractor->Start();
 }
 
-/*
- * Use of marching cube algorithm to render skeleton image. Note to self: use skeleton data.
- * TODO: Figure out if I should have the skeleton image and segment image in same window or not?
- */
-void renderSkeletonImage()
-{
-	// TODO I believe this function should be a lot like 'renderSegmentedImage()'.
-}
 
 /*
  * Use of marching cube algorithm to render the segemented image as instructed (...Or an effort to do it).
@@ -150,48 +182,7 @@ void renderSegmentedImage()
 	renderWindowInteractor->Start();
 }*/
 
-/*
- * Uses vessels data file.
- 
-void renderDataImage()
-{
-	// a) Load VTK files and make the basic menu
-	// Read legacy data from .vtk files
-	reader->SetFileName(vesselsDataFile.c_str());
-	reader->Update();
- 
-	geometryFilter->SetInputConnection(reader->GetOutputPort());
-	geometryFilter->Update();
- 
-	// Visualize
-	// Create a mapper and actor
-	mapper->SetInputConnection(geometryFilter->GetOutputPort());
-	actor->SetMapper(mapper);
 
-	//Create a renderer, render window, and interactor
-	renderWindow->AddRenderer(renderer);
-	renderWindowInteractor->SetRenderWindow(renderWindow);
-
-	// b) Planes for different views
-	// Handle key press
-	keypressCallback->SetCallback(KeypressCallbackFunction);
-	renderWindowInteractor->AddObserver(vtkCommand::KeyPressEvent, keypressCallback);
-
-	//Add the actors to the scene
-	renderer->AddActor(actor);
-	renderer->SetBackground(1.0, 1.0, 1.0);
-
-	// Menu vtkTextActor
-	textActor->GetTextProperty()->SetFontSize(16);
-	textActor->SetDisplayPosition(10, 10);
-	renderer->AddActor2D(textActor);
-	textActor->SetInput("Menu");
-	textActor->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
-
-	//Render and interact
-	renderWindow->Render();
-	renderWindowInteractor->Start();
-}*/
 
 void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(eventId), void* vtkNotUsed(clientData), void* vtkNotUsed(callData))
 {
