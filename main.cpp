@@ -4,7 +4,6 @@
 #include <vtkConeSource.h>
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
-#include <vtkPolyDataMapper.h>
 #include <vtkActor.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
@@ -23,10 +22,6 @@
 #include <vtkCallbackCommand.h>
 #include <vtkCommand.h>
 
-// Marching cube algorithm
-#include <vtkContourFilter.h>
-#include <vtkPolyDataMapper.h>
-
 #include "MyImage3D.h"
 
 using namespace std;
@@ -34,9 +29,6 @@ using namespace std;
 // Functions
 void initVTK();
 void renderVTK();
-void renderDataImage();
-void renderSegmentedImage();
-void renderSkeletonImage();
 void KeypressCallbackFunction (vtkObject* caller, long unsigned int eventId, void* clientData, void* callData);
 
 // VTK window
@@ -44,12 +36,8 @@ vtkSmartPointer<vtkRenderer> renderer;
 vtkSmartPointer<vtkRenderWindow> renderWindow;
 vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor;
 
-vtkSmartPointer<vtkContourFilter> iso = vtkSmartPointer<vtkContourFilter>::New();
-vtkSmartPointer<vtkPolyDataMapper> isoMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-
 // Menu
 vtkSmartPointer<vtkTextActor> textActor = vtkSmartPointer<vtkTextActor>::New();
-
 
 int main(int, char *[])
 {
@@ -100,8 +88,9 @@ int main(int, char *[])
 	maximumText->SetInput(text.str().c_str());
 	renderer->AddActor2D(maximumText);
 
-	vtkSmartPointer<vtkActor> dataImageActor = image.LoadDataImage();
-	renderer->AddActor(dataImageActor);
+	//vtkSmartPointer<vtkActor> dataImageActor = image.LoadDataImage();
+	vtkSmartPointer<vtkActor> dataSegmentedActor = image.LoadSegmentedImage();
+	renderer->AddActor(dataSegmentedActor);
 
 	renderVTK();
 
@@ -136,53 +125,6 @@ void renderVTK()
 	renderWindow->Render();
 	renderWindowInteractor->Start();
 }
-
-
-/*
- * Use of marching cube algorithm to render the segemented image as instructed (...Or an effort to do it).
- * Note to self: use segment data
- * TODO: Figure out if I should have the skeleton image and segment image in same window or not?
- *       What should I reuse in the functions? Readers? mappers?
- 
-void renderSegmentedImage() 
-{
-	// Create reader
-	reader->SetFileName(vesselsSegFile.c_str());
-	reader->Update();
-
-	// Create contour filter
-	iso->SetInputConnection(reader->GetOutputPort()); 
-	iso->SetValue(0, 128.0f);
-	iso->Update();
-	isoMapper->SetInputConnection(iso->GetOutputPort()); 
-	isoMapper->ScalarVisibilityOff();
-
-	// Create renderer
-	renderer->SetBackground(1.0, 1.0, 1.0);
-	
-	// Create actors
-	actor->SetMapper(isoMapper);
-	renderer->AddActor(actor);
-
-	textActor->GetTextProperty()->SetFontSize(16);
-	textActor->SetDisplayPosition(10, 10);
-	textActor->SetInput("Segmented Image");
-	textActor->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
-	renderer->AddActor2D(textActor);
-
-	// Create render window
-	renderWindow->AddRenderer(renderer);
-	renderWindowInteractor->SetRenderWindow(renderWindow);
-
-	keypressCallback->SetCallback(KeypressCallbackFunction);
-	renderWindowInteractor->AddObserver(vtkCommand::KeyPressEvent, keypressCallback);
-
-	//Start
-	renderWindow->Render();
-	renderWindowInteractor->Start();
-}*/
-
-
 
 void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(eventId), void* vtkNotUsed(clientData), void* vtkNotUsed(callData))
 {

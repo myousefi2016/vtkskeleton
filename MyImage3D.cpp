@@ -69,11 +69,7 @@ void MyImage3D::FillInWith(unsigned short _value)
 
 vtkSmartPointer<vtkActor> MyImage3D::LoadDataImage()
 {
-	
-	// Paths
 	string vesselsDataFile = "vessels_data.vtk";
-	string vesselsSegFile = "vessels_seg.vtk";
-	string vesselsSkelFile = "vessels_skel.vtk";
 
 	reader->SetFileName(vesselsDataFile.c_str());
 	reader->Update();
@@ -83,6 +79,34 @@ vtkSmartPointer<vtkActor> MyImage3D::LoadDataImage()
 
 	mapper->SetInputConnection(geometryFilter->GetOutputPort());
 	actor->SetMapper(mapper);
+
+	return actor;
+}
+
+vtkSmartPointer<vtkActor> MyImage3D::LoadSegmentedImage()
+{
+	string vesselsSegFile = "vessels_seg.vtk";
+
+	reader->SetFileName(vesselsSegFile.c_str());
+	reader->Update();
+
+	iso->SetInputConnection(reader->GetOutputPort()); 
+	iso->SetValue(0, 128.0f);
+	iso->Update();
+	isoMapper->SetInputConnection(iso->GetOutputPort()); 
+	isoMapper->ScalarVisibilityOff();
+
+	actor->SetMapper(isoMapper);
+
+	return actor;
+}
+
+vtkSmartPointer<vtkActor> MyImage3D::LoadSkeletonImage()
+{
+	string vesselsSegFile = "vessels_skel.vtk";
+
+	reader->SetFileName(vesselsSegFile.c_str());
+	reader->Update();
 
 	return actor;
 }

@@ -16,10 +16,13 @@
 #include <vtkImageData.h>
 #include <string>
 
+// VTK files
 #include <vtkPolyDataMapper.h>
 #include <vtkStructuredPointsReader.h>
 #include <vtkImageDataGeometryFilter.h>
 #include <vtkActor.h>
+#include <vtkContourFilter.h>
+
 using namespace std;
 
 class MyImage3D
@@ -28,6 +31,9 @@ class MyImage3D
 	vtkSmartPointer<vtkImageDataGeometryFilter> geometryFilter;
 	vtkSmartPointer<vtkPolyDataMapper> mapper;
 	vtkSmartPointer<vtkActor> actor;
+
+	vtkSmartPointer<vtkContourFilter> iso;
+	vtkSmartPointer<vtkPolyDataMapper> isoMapper;
 
 	public:
 
@@ -42,6 +48,10 @@ class MyImage3D
 			geometryFilter = vtkSmartPointer<vtkImageDataGeometryFilter>::New();
 			mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 			actor = vtkSmartPointer<vtkActor>::New();
+
+			// Segmented VTK file
+			iso = vtkSmartPointer<vtkContourFilter>::New();
+			isoMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 		};
 
 		//If the image is empty return true (1), else return fail (0).
@@ -57,7 +67,10 @@ class MyImage3D
 		// Fill in the image with the given value
 		void FillInWith(unsigned short _value);
 
+		// Loading VTK files
 		vtkSmartPointer<vtkActor> LoadDataImage();
+		vtkSmartPointer<vtkActor> LoadSegmentedImage();
+		vtkSmartPointer<vtkActor> LoadSkeletonImage();
 };
 
 #endif
