@@ -1,9 +1,7 @@
 #include <iostream>
 #include <sstream>
 
-#include <vtkConeSource.h>
 #include <vtkPolyData.h>
-#include <vtkSmartPointer.h>
 #include <vtkActor.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
@@ -40,10 +38,6 @@ vtkSmartPointer<vtkRenderer> renderer;
 vtkSmartPointer<vtkRenderWindow> renderWindow;
 vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor;
 
-vtkSmartPointer<vtkActor> dataImageActor = NULL;
-vtkSmartPointer<vtkActor> dataSegmentedActor = NULL;
-vtkSmartPointer<vtkActor> dataSkeletonActor = NULL;
-
 // Menu
 vtkSmartPointer<vtkTextActor> menuInfo, menuCommands;
 
@@ -73,8 +67,6 @@ int main(int, char *[])
 	image.Index(3,3,3) = 1;
 	image.Index(1,1,1) = 15;
 
-	unsigned short maximum = 12;
-
 	// Example of going through the whole 3-D image and finding the maximum value:
 	/*unsigned short maximum;
 	maximum = image.Index(0,0,0);
@@ -90,26 +82,13 @@ int main(int, char *[])
 					maximum = image.Index(s,r,c);
 			}
 		}
-	}
-	cout << "Maximum value in the 3D image is " << ((int)(maximum)) << "." << endl;*/
+	}*/
 
-	//----- Print maximum value on the screen -----
-	vtkSmartPointer<vtkTextActor> maximumText = vtkSmartPointer<vtkTextActor>::New();
-	
-	maximumText->GetTextProperty()->SetFontSize(14);
-	maximumText->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
-	maximumText->SetDisplayPosition(15, 5);
-	ostringstream text;
-	text << "maximum = " << ((int)(maximum)) << endl;
-	text << ends;
-
-	maximumText->SetInput(text.str().c_str());
-	//renderer->AddActor2D(maximumText);
-
-	//vtkSmartPointer<vtkActor> dataImageActor = image.LoadDataImage();
-	//vtkSmartPointer<vtkActor> dataSegmentedActor = image.LoadSegmentedImage();
-	vtkSmartPointer<vtkActor> dataSkeletonActor = image.LoadSkeletonImage();
-	renderer->AddActor(dataSkeletonActor);
+	vtkSmartPointer<vtkActor> dataActor;
+	dataActor = image.LoadDataImage();
+	//dataActor = image.LoadSegmentedImage();
+	//dataActor = image.LoadSkeletonImage();
+	renderer->AddActor(dataActor);
 
 	renderVTK();
 
@@ -160,13 +139,13 @@ void prepareMenu() {
 	menuInfo->GetTextProperty()->SetFontSize(14);
 	menuInfo->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
 	menuInfo->SetDisplayPosition(menuPositionX, menuPositionY);
-	menuInfo->SetInput("[i] see available commands.");
+	menuInfo->SetInput("[i] see available commands");
 	
 	menuCommands->GetTextProperty()->SetFontFamilyToCourier();
 	menuCommands->GetTextProperty()->SetFontSize(14);
 	menuCommands->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
 	menuCommands->SetDisplayPosition(menuPositionX, menuPositionY);
-	menuCommands->SetInput("[s] sagittal view\n[t] transversal view\n[c] coronal view\n[+/-] zoom in/out\n[r] reset camera\n[e/q] exit\n[i] close commands info");
+	menuCommands->SetInput("[s] sagittal view\n[t] transversal view\n[c] coronal view\n[+/-] zoom in/out\n[r] reset zoom\n[e/q] exit\n[i] close commands info");
 }
 
 void toggleMenu() {
