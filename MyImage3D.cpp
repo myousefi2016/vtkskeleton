@@ -108,5 +108,13 @@ vtkSmartPointer<vtkActor> MyImage3D::LoadSkeletonImage()
 	reader->SetFileName(vesselsSegFile.c_str());
 	reader->Update();
 
+	iso->SetInputConnection(reader->GetOutputPort()); 
+	iso->SetValue(0, 10.0f);
+	iso->Update();
+	isoMapper->SetInputConnection(iso->GetOutputPort()); 
+	isoMapper->ScalarVisibilityOff();
+
+	actor->SetMapper(isoMapper);
+
 	return actor;
 }
