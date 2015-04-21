@@ -32,8 +32,8 @@ class MyImage3D
 	vtkSmartPointer<vtkPolyDataMapper> mapper;
 	vtkSmartPointer<vtkActor> actor;
 
-	vtkSmartPointer<vtkContourFilter> iso;
-	vtkSmartPointer<vtkPolyDataMapper> isoMapper;
+	vtkSmartPointer<vtkContourFilter> contourFilter;
+	vtkSmartPointer<vtkPolyDataMapper> polydataMapper;
 
 	public:
 
@@ -50,8 +50,8 @@ class MyImage3D
 			actor = vtkSmartPointer<vtkActor>::New();
 
 			// Segmented VTK file
-			iso = vtkSmartPointer<vtkContourFilter>::New();
-			isoMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+			contourFilter = vtkSmartPointer<vtkContourFilter>::New();
+			polydataMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 		};
 
 		//If the image is empty return true (1), else return fail (0).

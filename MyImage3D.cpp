@@ -90,13 +90,13 @@ vtkSmartPointer<vtkActor> MyImage3D::LoadSegmentedImage()
 	reader->SetFileName(vesselsSegFile.c_str());
 	reader->Update();
 
-	iso->SetInputConnection(reader->GetOutputPort()); 
-	iso->SetValue(0, 128.0f);
-	iso->Update();
-	isoMapper->SetInputConnection(iso->GetOutputPort()); 
-	isoMapper->ScalarVisibilityOff();
+	contourFilter->SetInputConnection(reader->GetOutputPort()); 
+	contourFilter->SetValue(0, 64.0f);
+	contourFilter->Update();
+	polydataMapper->SetInputConnection(contourFilter->GetOutputPort()); 
+	polydataMapper->ScalarVisibilityOff();
 
-	actor->SetMapper(isoMapper);
+	actor->SetMapper(polydataMapper);
 
 	return actor;
 }
@@ -108,13 +108,13 @@ vtkSmartPointer<vtkActor> MyImage3D::LoadSkeletonImage()
 	reader->SetFileName(vesselsSegFile.c_str());
 	reader->Update();
 
-	iso->SetInputConnection(reader->GetOutputPort()); 
-	iso->SetValue(0, 10.0f);
-	iso->Update();
-	isoMapper->SetInputConnection(iso->GetOutputPort()); 
-	isoMapper->ScalarVisibilityOff();
+	contourFilter->SetInputConnection(reader->GetOutputPort()); 
+	contourFilter->SetValue(0, 10.0f);
+	contourFilter->Update();
+	polydataMapper->SetInputConnection(contourFilter->GetOutputPort()); 
+	polydataMapper->ScalarVisibilityOff();
 
-	actor->SetMapper(isoMapper);
+	actor->SetMapper(polydataMapper);
 
 	return actor;
 }
