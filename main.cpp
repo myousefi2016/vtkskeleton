@@ -26,6 +26,14 @@
 #include <vtkContourFilter.h>
 #include <vtkPolyDataMapper.h>
 
+#include <vtkTubeFilter.h>
+#include <vtkPointSet.h>
+#include <vtkPoints.h>
+#include <vtkPolyData.h>
+#include <vtkIdList.h>
+#include <vtkCell.h>
+#include <vtkCellArray.h>
+
 using namespace std;
 
 // Functions
@@ -39,8 +47,9 @@ vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
 vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();
 vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
 vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
-vtkSmartPointer<vtkContourFilter> iso = vtkSmartPointer<vtkContourFilter>::New();
-vtkSmartPointer<vtkPolyDataMapper> isoMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+vtkSmartPointer<vtkContourFilter> contourFilter = vtkSmartPointer<vtkContourFilter>::New();
+vtkSmartPointer<vtkPolyDataMapper> pdMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+vtkSmartPointer<vtkTubeFilter> tubeFilter = vtkSmartPointer<vtkTubeFilter>::New();
 
 // Key press
 vtkSmartPointer<vtkCallbackCommand> keypressCallback = vtkSmartPointer<vtkCallbackCommand>::New();
@@ -58,7 +67,123 @@ string vesselsSkelFile = "vessels_skel.vtk";
  */
 void renderSkeletonImage()
 {
-	// TODO I believe this function should be a lot like 'renderSegmentedImage()'.
+	// Create reader
+	reader->SetFileName(vesselsSkelFile.c_str());
+	reader->Update();
+
+	// Create contour filter
+	contourFilter->SetInputConnection(reader->GetOutputPort()); 
+	
+	// setValue(): 1st parameter I don't understand.
+	// 2nd parameter: The smaller it is, the more complete becomes the skeleton. Like it was a parameter describing
+	// how small the smallest cube are allowed to be to be rendered.
+	contourFilter->SetValue(0, 128.0f);
+	contourFilter->Update();
+
+	// TODO: Doesn't work. The tube filter needs other type of data than the vesselsSkelFile. I tried 
+	// with contourFilter variable as input but then nothing was rendered..
+
+	// FROM API: input line must not have duplicate points, or normals at points that are parallel to the incoming/outgoing 
+	//line segments. (Duplicate points can be removed with vtkCleanPolyData.) 
+	//If a line does not meet this criteria, then that line is not tubed.
+	tubeFilter->SetInputConnection(contourFilter->GetOutputPort());
+	tubeFilter->SetRadius(.5);
+	tubeFilter->SetNumberOfSides(8);
+	tubeFilter->Update();
+
+	pdMapper->SetInputConnection(contourFilter->GetOutputPort()); 
+	pdMapper->ScalarVisibilityOff();
+
+	
+
+	
+	
+	vtkSmartPointer<vtkPolyData> polyData = pdMapper->GetInput();
+	vtkSmartPointer<vtkCellArray> cellArray = polyData->GetPolys(); 
+
+	cout << "Indata: #Points: " << polyData->GetNumberOfPoints() << ", #Cells: " << polyData->GetNumberOfCells() << endl; // TODO just a test. >16000 points
+	//cout << "Coordinate x of point 2: " << polyData->GetPoints()->GetPoint(2)[0] << endl;
+
+
+
+    
+    polyData->BuildLinks();
+
+    vtkSmartPointer<vtkIdList> idlist = vtkSmartPointer<vtkIdList>::New();
+    vtkSmartPointer<vtkIdList> cellIds = vtkSmartPointer<vtkIdList>::New();
+    
+    cellArray->InitTraversal();
+    /*for(int j = 0; j < 20; j++) 
+    {
+    	cellArray->GetNextCell(idlist);
+    	cout << "idlist size " << idlist->GetNumberOfIds() << endl;
+
+    	for(int k = 0; k < idlist->GetNumberOfIds(); k++)
+    	{
+
+    		int pointID = idlist->GetId(k);
+    		polyData->GetPointCells(pointID, cellIds);
+    		
+    		cout << "Cells that share point " << pointID << ": ";
+    		for(int l = 0; l < cellIds->GetNumberOfIds(); l++) { cout << cellIds->GetId(l) << ", "; }
+    		cout << endl;
+
+    	}
+    }
+    
+    cellArray->GetCell(0, idlist);
+    cout << idlist->GetNumberOfIds() << endl;
+    polyData->GetCellNeighbors(0, idlist, cellIds);
+    cout << cellIds->GetNumberOfIds() << " neighbors of cell 0: ";
+    for(int l = 0; l < cellIds->GetNumberOfIds(); l++) { cout << cellIds->GetId(l) << ", "; }
+    cout << endl;*/
+   
+
+	/*cellArray->InitTraversal();
+    for (int j = 0; j < 9; j++)
+    {
+    	cellArray->GetNextCell(idlist);
+    	cout << "idlist size " << idlist->GetNumberOfIds() << endl;
+
+    	cout << "-----Cell " << j << "-----" << endl;
+    	for(int k = 0; k < idlist->GetNumberOfIds(); k++)
+    	{
+    		double p[3];
+    		polyData->GetPoint(idlist->GetId(k), p);
+    		cout << "		" << "point " << k << ", (x, y, z): (" << p[0] << ", " << p[1] << ", " << p[2] << ")" << endl;
+    	}
+    	
+    }*/
+
+
+    
+                  
+              
+
+
+	// Create renderer
+	renderer->SetBackground(1.0, 1.0, 1.0);
+	
+	// Create actors
+	actor->SetMapper(pdMapper);
+	renderer->AddActor(actor);
+
+	textActor->GetTextProperty()->SetFontSize(16);
+	textActor->SetDisplayPosition(10, 10);
+	textActor->SetInput("Skeleton path");
+	textActor->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
+	renderer->AddActor2D(textActor);
+
+	// Create render window
+	renderWindow->AddRenderer(renderer);
+	renderWindowInteractor->SetRenderWindow(renderWindow);
+
+	keypressCallback->SetCallback(KeypressCallbackFunction);
+	renderWindowInteractor->AddObserver(vtkCommand::KeyPressEvent, keypressCallback);
+
+	//Start
+	renderWindow->Render();
+	renderWindowInteractor->Start();
 }
 
 /*
@@ -74,17 +199,17 @@ void renderSegmentedImage()
 	reader->Update();
 
 	// Create contour filter
-	iso->SetInputConnection(reader->GetOutputPort()); 
-	iso->SetValue(0, 128.0f);
-	iso->Update();
-	isoMapper->SetInputConnection(iso->GetOutputPort()); 
-	isoMapper->ScalarVisibilityOff();
+	contourFilter->SetInputConnection(reader->GetOutputPort()); 
+	contourFilter->SetValue(0, 128.0f);
+	contourFilter->Update();
+	pdMapper->SetInputConnection(contourFilter->GetOutputPort()); 
+	pdMapper->ScalarVisibilityOff();
 
 	// Create renderer
 	renderer->SetBackground(1.0, 1.0, 1.0);
 	
 	// Create actors
-	actor->SetMapper(isoMapper);
+	actor->SetMapper(pdMapper);
 	renderer->AddActor(actor);
 
 	textActor->GetTextProperty()->SetFontSize(16);
@@ -151,8 +276,8 @@ void renderDataImage()
 int main(int, char *[])
 {
 	//renderDataImage();
-	renderSegmentedImage();
-	//renderSkeletonImage();
+	//renderSegmentedImage();
+	renderSkeletonImage();
   
 	return EXIT_SUCCESS;
 }
