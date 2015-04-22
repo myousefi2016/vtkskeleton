@@ -31,7 +31,10 @@ void initVTK();
 void renderVTK();
 void prepareMenu();
 void toggleMenu();
+void toggleLoading();
 void loadVessels();
+void loadFile(VesselFile type);
+void refreshWindow();
 void KeypressCallbackFunction (vtkObject* caller, long unsigned int eventId, void* clientData, void* callData);
 
 // VTK window
@@ -39,7 +42,6 @@ vtkSmartPointer<vtkRenderer> renderer;
 vtkSmartPointer<vtkRenderWindow> renderWindow;
 vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor;
 
-vtkSmartPointer<vtkActor> dataActor;
 
 // Menu
 vtkSmartPointer<vtkTextActor> menuInfo, menuCommands, menuVessels, menuLoading;
@@ -50,6 +52,7 @@ const int windowSizeY = 700;
 
 // Flags
 bool menuInfoVisible = false;
+bool loadingData = false;
 
 MyImage3D image;
 
@@ -58,16 +61,16 @@ int main(int, char *[])
 	initVTK();
 
 	// Example of creating a new 3-D image and initializing it with 0:
-	image.Set(230, 256, 256);
-	image.FillInWith(0);
+	//image.Set(230, 256, 256);
+	//image.FillInWith(0);
 
 	//Put some voxel values in the image:
-	image.Index(1,2,3) = 15;
-	image.Index(4,2,2) = 5;
-	image.Index(8,6,3) = 7;
-	image.Index(5,6,8) = 20000;
-	image.Index(3,3,3) = 1;
-	image.Index(1,1,1) = 15;
+	//image.Index(1,2,3) = 15;
+	//image.Index(4,2,2) = 5;
+	//image.Index(8,6,3) = 7;
+	//image.Index(5,6,8) = 20000;
+	//image.Index(3,3,3) = 1;
+	//image.Index(1,1,1) = 15;
 
 	// Example of going through the whole 3-D image and finding the maximum value:
 	/*unsigned short maximum;
@@ -85,11 +88,9 @@ int main(int, char *[])
 			}
 		}
 	}*/
-
-	//dataActor = image.LoadDataImage();
-	//dataActor = image.LoadSegmentedImage();
-	dataActor = image.LoadSkeletonImage();
-	renderer->AddActor(dataActor);
+	
+	// The first one to load
+	loadFile(Segmented);
 
 	renderVTK();
 
@@ -108,7 +109,6 @@ void initVTK()
 
 	renderWindow->AddRenderer(renderer);
 	renderWindow->SetSize(windowSizeX, windowSizeY);
-	renderWindow->SetWindowName("Skeleton Visualisation");
 	
 	// Handle key press
 	vtkSmartPointer<vtkCallbackCommand> keypressCallback = vtkSmartPointer<vtkCallbackCommand>::New();
@@ -130,9 +130,10 @@ void renderVTK()
 }
 
 /*
- * Prepare menus and show info message
+ * Prepare menu and info messages
  */
-void prepareMenu() {
+void prepareMenu()
+{
 	menuInfo = vtkSmartPointer<vtkTextActor>::New();
 	menuCommands = vtkSmartPointer<vtkTextActor>::New();
 	menuVessels = vtkSmartPointer<vtkTextActor>::New();
@@ -167,48 +168,104 @@ void prepareMenu() {
 	menuLoading->SetInput("Loading, it may take a while...");
 }
 
-void toggleMenu() {
+/*
+ * Used to show/hide available commands
+ */
+void toggleMenu()
+{
 	if (menuInfoVisible) { // we will see list of commands
 		renderer->RemoveActor2D(menuInfo);
 		renderer->AddActor2D(menuCommands);
-		menuInfoVisible = false;
 	} else {
 		renderer->RemoveActor2D(menuCommands);
 		renderer->AddActor2D(menuInfo);
-		menuInfoVisible = true;
 	}
+	menuInfoVisible = !menuInfoVisible;
 	renderWindowInteractor->Render();
 }
 
-void loadVessels(VesselFile type) {
-	if (image.currentVessel == Loading) {// drop multiple loads
+/*
+ * Shows loading message, used for VTK files when the window freezes.
+ */
+void toggleLoading()
+{
+	if (loadingData) {
+		renderer->RemoveActor2D(menuLoading);
+	} else {
+		renderer->AddActor2D(menuLoading);
+	}
+	loadingData = !loadingData;
+	refreshWindow();
+}
+
+/*
+ * Handles loading different vessels on user's key press
+ */
+void loadVessels(VesselFile type)
+{
+	// drop multiple loads
+	if (image.currentVessel == Loading || image.currentVessel == type) {
 		cout << "Loading, please wait" << endl;
 		return;
 	}
 	
+	// Loading on
 	image.currentVessel = Loading;
 	renderer->AddActor2D(menuLoading);
-	renderWindowInteractor->Render();
+	refreshWindow();
 
+	// Load file
+	loadFile(type);
+	
+	// Loading off
+	image.currentVessel = type;
+	renderer->RemoveActor2D(menuLoading);
+	refreshWindow();
+}
+
+/*
+ * Loads demanded file and changes window title
+ */
+void loadFile(VesselFile type)
+{
 	switch (type) {
 	case Data:
 		dataActor = image.LoadDataImage();
+		renderer->RemoveActor(segmentedActor);
+		renderer->RemoveActor(skeletonActor);
+		renderer->AddActor(dataActor);
+		renderWindow->SetWindowName("Skeleton Visualisation (vessels_data.vtk)");
 		break;
 	case Segmented:
-		dataActor = image.LoadSegmentedImage();
+		segmentedActor = image.LoadSegmentedImage();
+		renderer->RemoveActor(dataActor);
+		renderer->RemoveActor(skeletonActor);
+		renderer->AddActor(segmentedActor);
+		renderWindow->SetWindowName("Skeleton Visualisation (vessels_seg.vtk)");
 		break;
 	case Skeleton:
-		dataActor = image.LoadSkeletonImage();
+		skeletonActor = image.LoadSkeletonImage();
+		renderer->RemoveActor(dataActor);
+		renderer->RemoveActor(segmentedActor);
+		renderer->AddActor(skeletonActor);
+		renderWindow->SetWindowName("Skeleton Visualisation (vessels_skel.vtk)");
 		break;
 	}
-	
-	image.currentVessel = type;
-	renderer->RemoveActor2D(menuLoading);
-
-	renderer->AddActor(dataActor);
-	renderWindowInteractor->Render();
 }
 
+/*
+ * Refreshes interactor after adding/removing actors
+ */
+void refreshWindow()
+{
+	renderWindowInteractor->Render();
+	//renderer->Modified();
+	//renderWindow->Render();
+}
+
+/*
+ * Function to handle pressed keys
+ */
 void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(eventId), void* vtkNotUsed(clientData), void* vtkNotUsed(callData))
 {
 	vtkRenderWindowInteractor *iren = static_cast<vtkRenderWindowInteractor*>(caller);
@@ -240,7 +297,7 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	}
 
 	// Vessel files
-	//if (key == "6") loadVessels(Data);
-	//if (key == "7") loadVessels(Segmented);
-	//if (key == "8") loadVessels(Skeleton);
+	if (key == "6") loadVessels(Data);
+	if (key == "7") loadVessels(Segmented);
+	if (key == "8") loadVessels(Skeleton);
 }
