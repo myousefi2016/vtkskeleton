@@ -3,24 +3,22 @@
 
 #include <vtkPolyData.h>
 #include <vtkActor.h>
+#include <vtkCamera.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderer.h>
 #include <vtkRenderWindowInteractor.h>
 #include <vtkInteractorStyleTrackballCamera.h>
-
-// file legacy load
-#include <vtkStructuredPointsReader.h>
-#include <vtkImageDataGeometryFilter.h>
 
 // textActor
 #include <vtkTextActor.h>
 #include <vtkTextProperty.h>
 
 // key pressed
-#include <vtkCallbackCommand.h>
 #include <vtkCommand.h>
+#include <vtkCallbackCommand.h>
 
-#include <vtkCamera.h>
+// 
+#include <vtkImagePlaneWidget.h>
 
 #include "MyImage3D.h"
 
@@ -41,6 +39,7 @@ void KeypressCallbackFunction (vtkObject* caller, long unsigned int eventId, voi
 vtkSmartPointer<vtkRenderer> renderer;
 vtkSmartPointer<vtkRenderWindow> renderWindow;
 vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor;
+vtkSmartPointer<vtkImagePlaneWidget> planeWidget;
 
 vtkSmartPointer<vtkActor> dataActor, segmentedActor, skeletonActor, outlineActor;
 
@@ -122,6 +121,8 @@ void initVTK()
 
 	renderWindowInteractor->SetRenderWindow(renderWindow);
 	renderWindowInteractor->SetInteractorStyle(interactorStyle);
+
+ 
 }
 
 void renderVTK()
