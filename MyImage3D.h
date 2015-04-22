@@ -35,17 +35,15 @@ enum VesselFile {
 
 class MyImage3D
 {
-	vtkSmartPointer<vtkStructuredPointsReader> reader;
-	vtkSmartPointer<vtkImageDataGeometryFilter> geometryFilter;
-	vtkSmartPointer<vtkPolyDataMapper> mapper;
-	vtkSmartPointer<vtkActor> actor;
+	vtkSmartPointer<vtkStructuredPointsReader> dataReader, segmReader, skelReader;
+	vtkSmartPointer<vtkPolyDataMapper> dataMapper, segmMapper, skelMapper;
+	vtkSmartPointer<vtkActor> dataActor = NULL, segmActor = NULL, skelActor = NULL;
 
-	vtkSmartPointer<vtkContourFilter> contourFilter;
-	vtkSmartPointer<vtkPolyDataMapper> polydataMapper;
+	vtkSmartPointer<vtkPolyDataMapper> pdDataMapper, pdSegmMapper, pdSkelMapper, pdOutlineMapper;
 
 	public:
+
 		vtkSmartPointer<vtkImageData> vtk_image_data;
-		bool dataLoading;
 		VesselFile currentVessel;
 
 		MyImage3D()
@@ -53,17 +51,9 @@ class MyImage3D
 			vtk_image_data = vtkSmartPointer<vtkImageData>::New();
 
 			currentVessel = None;
-			dataLoading = false;
 
 			// Data VTK file
-			reader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-			geometryFilter = vtkSmartPointer<vtkImageDataGeometryFilter>::New();
-			mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-			actor = vtkSmartPointer<vtkActor>::New();
 
-			// Segmented VTK file
-			contourFilter = vtkSmartPointer<vtkContourFilter>::New();
-			polydataMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 		};
 
 		//If the image is empty return true (1), else return fail (0).

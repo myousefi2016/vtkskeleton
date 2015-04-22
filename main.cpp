@@ -42,7 +42,7 @@ vtkSmartPointer<vtkRenderer> renderer;
 vtkSmartPointer<vtkRenderWindow> renderWindow;
 vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor;
 
-vtkSmartPointer<vtkActor> dataActor, segmentedActor, skeletonActor;
+vtkSmartPointer<vtkActor> dataActor, segmentedActor, segmentedOutlineActor, skeletonActor;
 
 // Menu
 vtkSmartPointer<vtkTextActor> menuInfo, menuCommands, menuVessels, menuLoading;
@@ -153,7 +153,7 @@ void prepareMenu()
 	menuCommands->GetTextProperty()->SetFontSize(14);
 	menuCommands->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
 	menuCommands->SetDisplayPosition(menuPositionX, menuPositionY);
-	menuCommands->SetInput("[s] sagittal view\n[t] transversal view\n[c] coronal view\n[+/-] zoom in/out\n[r] reset zoom\n[e/q] exit\n[i] close commands info");
+	menuCommands->SetInput("# Segmented image:\n[s] sagittal view\n[t] transversal view\n[c] coronal view\n\n[p/m] zoom in/out\n[z] reset zoom\n[e/q] exit\n[i] close commands info");
 	
 	menuVessels->GetTextProperty()->SetFontFamilyToCourier();
 	menuVessels->GetTextProperty()->SetFontSize(14);
@@ -205,10 +205,8 @@ void toggleLoading()
 void loadVessels(VesselFile type)
 {
 	// drop multiple loads
-	if (image.currentVessel == Loading || image.currentVessel == type) {
-		cout << "Loading, please wait" << endl;
+	if (image.currentVessel == Loading || image.currentVessel == type)
 		return;
-	}
 	
 	// Loading on
 	image.currentVessel = Loading;
@@ -276,24 +274,37 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	if (key == "i") {
 		toggleMenu();
 	}
-	if (key == "s") {
-		cout << "sagittal, do something" << endl;
+
+	// Segmented image
+	if (image.currentVessel == Segmented) {
+		if (key == "s") {
+			cout << "sagittal, do something" << endl;
+		}
+		if (key == "t") {
+			cout << "transversal, do something" << endl;
+		}
+		if (key == "c") {
+			cout << "coronal, do something" << endl;
+		}
+
+		if (key == "plus") {
+
+		}
+		if (key == "minus") {
+
+		}
 	}
-	if (key == "t") {
-		cout << "transversal, do something" << endl;
-	}
-	if (key == "c") {
-		cout << "coronal, do something" << endl;
-	}
-	if (key == "plus") {
+
+	// Zoom in/out
+	if (key == "p") {
 		renderer->GetActiveCamera()->Zoom(1.25);
 		renderWindowInteractor->Render();
 	}
-	if (key == "minus") {
+	if (key == "m") {
 		renderer->GetActiveCamera()->Zoom(0.8);
 		renderWindowInteractor->Render();
 	}
-	if (key == "r") {
+	if (key == "z") {
 		renderer->ResetCamera();
 	}
 

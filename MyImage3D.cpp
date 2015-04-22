@@ -69,50 +69,73 @@ void MyImage3D::FillInWith(unsigned short _value)
 
 vtkSmartPointer<vtkActor> MyImage3D::LoadDataImage()
 {
+	if (dataActor != NULL)
+		return dataActor;
+
 	string vesselsDataFile = "vessels_data.vtk";
-
-	reader->SetFileName(vesselsDataFile.c_str());
-	reader->Update();
+	
+	dataReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+	dataReader->SetFileName(vesselsDataFile.c_str());
+	dataReader->Update();
  
-	geometryFilter->SetInputConnection(reader->GetOutputPort());
+	vtkSmartPointer<vtkImageDataGeometryFilter> geometryFilter = vtkSmartPointer<vtkImageDataGeometryFilter>::New();
+	geometryFilter->SetInputConnection(dataReader->GetOutputPort());
 	geometryFilter->Update();
+	
+	dataMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	dataMapper->SetInputConnection(geometryFilter->GetOutputPort());
 
-	mapper->SetInputConnection(geometryFilter->GetOutputPort());
-	actor->SetMapper(mapper);
+	dataActor = vtkSmartPointer<vtkActor>::New();
+	dataActor->SetMapper(dataMapper);
 
-	return actor;
+	return dataActor;
 }
 
 vtkSmartPointer<vtkActor> MyImage3D::LoadSegmentedImage()
 {
+	if (segmActor != NULL)
+		return segmActor;
+
 	string vesselsSegFile = "vessels_seg.vtk";
-
-	reader->SetFileName(vesselsSegFile.c_str());
-	reader->Update();
-
-	contourFilter->SetInputConnection(reader->GetOutputPort()); 
+	
+	segmReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+	segmReader->SetFileName(vesselsSegFile.c_str());
+	segmReader->Update();
+	
+	vtkSmartPointer<vtkContourFilter> contourFilter = vtkSmartPointer<vtkContourFilter>::New();
+	contourFilter->SetInputConnection(segmReader->GetOutputPort()); 
 	contourFilter->SetValue(0, 16.0f);
 	contourFilter->Update();
-	polydataMapper->SetInputConnection(contourFilter->GetOutputPort()); 
-	polydataMapper->ScalarVisibilityOff();
+	
+	segmMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	segmMapper->SetInputConnection(contourFilter->GetOutputPort()); 
+	segmMapper->ScalarVisibilityOff();
+	
+	segmActor = vtkSmartPointer<vtkActor>::New();
+	segmActor->SetMapper(segmMapper);
 
-	actor->SetMapper(polydataMapper);
-
-	return actor;
+	return segmActor;
 }
 
 vtkSmartPointer<vtkActor> MyImage3D::LoadSkeletonImage()
 {
+	if (skelActor != NULL)
+		return skelActor;
+
 	string vesselsSegFile = "vessels_skel.vtk";
-
-	reader->SetFileName(vesselsSegFile.c_str());
-	reader->Update();
-
-	contourFilter->SetInputConnection(reader->GetOutputPort()); 
+	
+	skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+	skelReader->SetFileName(vesselsSegFile.c_str());
+	skelReader->Update();
+	
+	vtkSmartPointer<vtkContourFilter> contourFilter = vtkSmartPointer<vtkContourFilter>::New();
+	contourFilter->SetInputConnection(skelReader->GetOutputPort()); 
 	contourFilter->SetValue(0, 8.0f);
 	contourFilter->Update();
-	polydataMapper->SetInputConnection(contourFilter->GetOutputPort()); 
-	polydataMapper->ScalarVisibilityOff();
+
+	segmMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	segmMapper->SetInputConnection(contourFilter->GetOutputPort()); 
+	segmMapper->ScalarVisibilityOff();
 
 	//vtkSmartPointer<vtkPolyData> polyData = polydataMapper->GetInput();
 	//for(vtkIdType i = 0; i < polyData->GetNumberOfPoints(); i++)
@@ -123,8 +146,9 @@ vtkSmartPointer<vtkActor> MyImage3D::LoadSkeletonImage()
 	//	// polydata->GetPoints()->GetPoint(i,p);
 	//	std::cout << "Point " << i << " : (" << p[0] << " " << p[1] << " " << p[2] << ")" << std::endl;
  //   }
+	
+	skelActor = vtkSmartPointer<vtkActor>::New();
+	skelActor->SetMapper(segmMapper);
 
-	actor->SetMapper(polydataMapper);
-
-	return actor;
+	return skelActor;
 }
