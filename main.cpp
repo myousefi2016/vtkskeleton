@@ -42,6 +42,7 @@ vtkSmartPointer<vtkRenderer> renderer;
 vtkSmartPointer<vtkRenderWindow> renderWindow;
 vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor;
 
+vtkSmartPointer<vtkActor> dataActor, segmentedActor, skeletonActor;
 
 // Menu
 vtkSmartPointer<vtkTextActor> menuInfo, menuCommands, menuVessels, menuLoading;
