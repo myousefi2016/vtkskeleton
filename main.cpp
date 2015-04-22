@@ -122,12 +122,18 @@ void initVTK()
 	renderWindowInteractor->SetRenderWindow(renderWindow);
 	renderWindowInteractor->SetInteractorStyle(interactorStyle);
 
+	//planeWidget = vtkSmartPointer<vtkImagePlaneWidget>::New();
+	//planeWidget->SetInteractor(renderWindowInteractor);
  
+	//double origin[3] = {0, 1, 0};
+	//planeWidget->SetOrigin(origin);
+	//planeWidget->UpdatePlacement();
 }
 
 void renderVTK()
 {
 	renderWindow->Render();
+	//planeWidget->On();
 	renderWindowInteractor->Start();
 }
 
