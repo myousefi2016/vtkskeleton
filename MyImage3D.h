@@ -25,6 +25,14 @@
 
 using namespace std;
 
+enum VesselFile {
+	None,
+	Data,
+	Segmented,
+	Skeleton,
+	Loading
+};
+
 class MyImage3D
 {
 	vtkSmartPointer<vtkStructuredPointsReader> reader;
@@ -36,12 +44,16 @@ class MyImage3D
 	vtkSmartPointer<vtkPolyDataMapper> polydataMapper;
 
 	public:
-
 		vtkSmartPointer<vtkImageData> vtk_image_data;
+		bool dataLoading;
+		VesselFile currentVessel;
 
 		MyImage3D()
 		{
 			vtk_image_data = vtkSmartPointer<vtkImageData>::New();
+
+			currentVessel = None;
+			dataLoading = false;
 
 			// Data VTK file
 			reader = vtkSmartPointer<vtkStructuredPointsReader>::New();

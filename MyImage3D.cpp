@@ -91,7 +91,7 @@ vtkSmartPointer<vtkActor> MyImage3D::LoadSegmentedImage()
 	reader->Update();
 
 	contourFilter->SetInputConnection(reader->GetOutputPort()); 
-	contourFilter->SetValue(0, 64.0f);
+	contourFilter->SetValue(0, 16.0f);
 	contourFilter->Update();
 	polydataMapper->SetInputConnection(contourFilter->GetOutputPort()); 
 	polydataMapper->ScalarVisibilityOff();
@@ -113,6 +113,16 @@ vtkSmartPointer<vtkActor> MyImage3D::LoadSkeletonImage()
 	contourFilter->Update();
 	polydataMapper->SetInputConnection(contourFilter->GetOutputPort()); 
 	polydataMapper->ScalarVisibilityOff();
+
+	vtkSmartPointer<vtkPolyData> polyData = polydataMapper->GetInput();
+	for(vtkIdType i = 0; i < polyData->GetNumberOfPoints(); i++)
+    {
+		double p[3];
+		polyData->GetPoint(i,p);
+		// This is identical to:
+		// polydata->GetPoints()->GetPoint(i,p);
+		std::cout << "Point " << i << " : (" << p[0] << " " << p[1] << " " << p[2] << ")" << std::endl;
+    }
 
 	actor->SetMapper(polydataMapper);
 

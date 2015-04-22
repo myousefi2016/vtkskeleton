@@ -31,6 +31,7 @@ void initVTK();
 void renderVTK();
 void prepareMenu();
 void toggleMenu();
+void loadVessels();
 void KeypressCallbackFunction (vtkObject* caller, long unsigned int eventId, void* clientData, void* callData);
 
 // VTK window
@@ -38,24 +39,25 @@ vtkSmartPointer<vtkRenderer> renderer;
 vtkSmartPointer<vtkRenderWindow> renderWindow;
 vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor;
 
+vtkSmartPointer<vtkActor> dataActor;
+
 // Menu
-vtkSmartPointer<vtkTextActor> menuInfo, menuCommands;
+vtkSmartPointer<vtkTextActor> menuInfo, menuCommands, menuVessels, menuLoading;
 
 // Configuration
 const int windowSizeX = 1000;
 const int windowSizeY = 700;
-const int menuPositionX = 10;
-const int menuPositionY = 10; // padding from bottom
 
 // Flags
 bool menuInfoVisible = false;
+
+MyImage3D image;
 
 int main(int, char *[])
 {
 	initVTK();
 
 	// Example of creating a new 3-D image and initializing it with 0:
-	MyImage3D image;
 	image.Set(230, 256, 256);
 	image.FillInWith(0);
 
@@ -84,10 +86,9 @@ int main(int, char *[])
 		}
 	}*/
 
-	vtkSmartPointer<vtkActor> dataActor;
-	dataActor = image.LoadDataImage();
+	//dataActor = image.LoadDataImage();
 	//dataActor = image.LoadSegmentedImage();
-	//dataActor = image.LoadSkeletonImage();
+	dataActor = image.LoadSkeletonImage();
 	renderer->AddActor(dataActor);
 
 	renderVTK();
@@ -134,6 +135,11 @@ void renderVTK()
 void prepareMenu() {
 	menuInfo = vtkSmartPointer<vtkTextActor>::New();
 	menuCommands = vtkSmartPointer<vtkTextActor>::New();
+	menuVessels = vtkSmartPointer<vtkTextActor>::New();
+	menuLoading = vtkSmartPointer<vtkTextActor>::New();
+
+	int menuPositionX = 10;
+	int menuPositionY = 10; // padding from bottom
 	
 	menuInfo->GetTextProperty()->SetFontFamilyToCourier();
 	menuInfo->GetTextProperty()->SetFontSize(14);
@@ -146,6 +152,19 @@ void prepareMenu() {
 	menuCommands->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
 	menuCommands->SetDisplayPosition(menuPositionX, menuPositionY);
 	menuCommands->SetInput("[s] sagittal view\n[t] transversal view\n[c] coronal view\n[+/-] zoom in/out\n[r] reset zoom\n[e/q] exit\n[i] close commands info");
+	
+	menuVessels->GetTextProperty()->SetFontFamilyToCourier();
+	menuVessels->GetTextProperty()->SetFontSize(14);
+	menuVessels->GetTextProperty()->SetColor(0.0, 0.0, 1.0);
+	menuVessels->SetDisplayPosition(menuPositionX + 300, menuPositionY);
+	menuVessels->SetInput("[6] data [7] segmented [8] skeleton image");
+	renderer->AddActor(menuVessels);
+	
+	menuLoading->GetTextProperty()->SetFontFamilyToCourier();
+	menuLoading->GetTextProperty()->SetFontSize(14);
+	menuLoading->GetTextProperty()->SetColor(1.0, 0.0, 0.0);
+	menuLoading->SetDisplayPosition(menuPositionX + 300, menuPositionY + 20);
+	menuLoading->SetInput("Loading, it may take a while...");
 }
 
 void toggleMenu() {
@@ -158,6 +177,35 @@ void toggleMenu() {
 		renderer->AddActor2D(menuInfo);
 		menuInfoVisible = true;
 	}
+	renderWindowInteractor->Render();
+}
+
+void loadVessels(VesselFile type) {
+	if (image.currentVessel == Loading) {// drop multiple loads
+		cout << "Loading, please wait" << endl;
+		return;
+	}
+	
+	image.currentVessel = Loading;
+	renderer->AddActor2D(menuLoading);
+	renderWindowInteractor->Render();
+
+	switch (type) {
+	case Data:
+		dataActor = image.LoadDataImage();
+		break;
+	case Segmented:
+		dataActor = image.LoadSegmentedImage();
+		break;
+	case Skeleton:
+		dataActor = image.LoadSkeletonImage();
+		break;
+	}
+	
+	image.currentVessel = type;
+	renderer->RemoveActor2D(menuLoading);
+
+	renderer->AddActor(dataActor);
 	renderWindowInteractor->Render();
 }
 
@@ -190,4 +238,9 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	if (key == "r") {
 		renderer->ResetCamera();
 	}
+
+	// Vessel files
+	//if (key == "6") loadVessels(Data);
+	//if (key == "7") loadVessels(Segmented);
+	//if (key == "8") loadVessels(Skeleton);
 }
