@@ -42,7 +42,7 @@ vtkSmartPointer<vtkRenderer> renderer;
 vtkSmartPointer<vtkRenderWindow> renderWindow;
 vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor;
 
-vtkSmartPointer<vtkActor> dataActor, segmentedActor, segmentedOutlineActor, skeletonActor;
+vtkSmartPointer<vtkActor> dataActor, segmentedActor, skeletonActor, outlineActor;
 
 // Menu
 vtkSmartPointer<vtkTextActor> menuInfo, menuCommands, menuVessels, menuLoading;
@@ -229,23 +229,27 @@ void loadFile(VesselFile type)
 {
 	switch (type) {
 	case Data:
-		dataActor = image.LoadDataImage();
+		dataActor = image.GetDataImage();
 		renderer->RemoveActor(segmentedActor);
 		renderer->RemoveActor(skeletonActor);
+		renderer->RemoveActor(outlineActor);
 		renderer->AddActor(dataActor);
 		renderWindow->SetWindowName("Skeleton Visualisation (vessels_data.vtk)");
 		break;
 	case Segmented:
-		segmentedActor = image.LoadSegmentedImage();
+		segmentedActor = image.GetSegmentedImage();
+		outlineActor = image.GetSegmentedOutline();
 		renderer->RemoveActor(dataActor);
 		renderer->RemoveActor(skeletonActor);
 		renderer->AddActor(segmentedActor);
+		renderer->AddActor(outlineActor);
 		renderWindow->SetWindowName("Skeleton Visualisation (vessels_seg.vtk)");
 		break;
 	case Skeleton:
-		skeletonActor = image.LoadSkeletonImage();
+		skeletonActor = image.GetSkeletonImage();
 		renderer->RemoveActor(dataActor);
 		renderer->RemoveActor(segmentedActor);
+		renderer->RemoveActor(outlineActor);
 		renderer->AddActor(skeletonActor);
 		renderWindow->SetWindowName("Skeleton Visualisation (vessels_skel.vtk)");
 		break;

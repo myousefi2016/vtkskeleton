@@ -67,7 +67,7 @@ void MyImage3D::FillInWith(unsigned short _value)
 	}
 }
 
-vtkSmartPointer<vtkActor> MyImage3D::LoadDataImage()
+vtkSmartPointer<vtkActor> MyImage3D::GetDataImage()
 {
 	if (dataActor != NULL)
 		return dataActor;
@@ -91,7 +91,7 @@ vtkSmartPointer<vtkActor> MyImage3D::LoadDataImage()
 	return dataActor;
 }
 
-vtkSmartPointer<vtkActor> MyImage3D::LoadSegmentedImage()
+vtkSmartPointer<vtkActor> MyImage3D::GetSegmentedImage()
 {
 	if (segmActor != NULL)
 		return segmActor;
@@ -117,7 +117,7 @@ vtkSmartPointer<vtkActor> MyImage3D::LoadSegmentedImage()
 	return segmActor;
 }
 
-vtkSmartPointer<vtkActor> MyImage3D::LoadSkeletonImage()
+vtkSmartPointer<vtkActor> MyImage3D::GetSkeletonImage()
 {
 	if (skelActor != NULL)
 		return skelActor;
@@ -151,4 +151,22 @@ vtkSmartPointer<vtkActor> MyImage3D::LoadSkeletonImage()
 	skelActor->SetMapper(segmMapper);
 
 	return skelActor;
+}
+
+vtkSmartPointer<vtkActor> MyImage3D::GetSegmentedOutline()
+{
+	if (outlineActor != NULL)
+		return outlineActor;
+
+	vtkSmartPointer<vtkOutlineFilter> outlineFilter = vtkSmartPointer<vtkOutlineFilter>::New();
+	outlineFilter->SetInputData(segmMapper->GetInput());
+
+	outlineMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	outlineMapper->SetInputConnection(outlineFilter->GetOutputPort());
+  
+	outlineActor = vtkSmartPointer<vtkActor>::New();
+	outlineActor->SetMapper(outlineMapper);
+	outlineActor->GetProperty()->SetColor(0, 0, 0);
+
+	return outlineActor;
 }

@@ -22,6 +22,8 @@
 #include <vtkImageDataGeometryFilter.h>
 #include <vtkActor.h>
 #include <vtkContourFilter.h>
+#include <vtkOutlineFilter.h>
+#include <vtkProperty.h>
 
 using namespace std;
 
@@ -36,10 +38,8 @@ enum VesselFile {
 class MyImage3D
 {
 	vtkSmartPointer<vtkStructuredPointsReader> dataReader, segmReader, skelReader;
-	vtkSmartPointer<vtkPolyDataMapper> dataMapper, segmMapper, skelMapper;
-	vtkSmartPointer<vtkActor> dataActor = NULL, segmActor = NULL, skelActor = NULL;
-
-	vtkSmartPointer<vtkPolyDataMapper> pdDataMapper, pdSegmMapper, pdSkelMapper, pdOutlineMapper;
+	vtkSmartPointer<vtkPolyDataMapper> dataMapper, segmMapper, skelMapper, outlineMapper;
+	vtkSmartPointer<vtkActor> dataActor = NULL, segmActor = NULL, skelActor = NULL, outlineActor = NULL;
 
 	public:
 
@@ -49,11 +49,7 @@ class MyImage3D
 		MyImage3D()
 		{
 			vtk_image_data = vtkSmartPointer<vtkImageData>::New();
-
 			currentVessel = None;
-
-			// Data VTK file
-
 		};
 
 		//If the image is empty return true (1), else return fail (0).
@@ -70,9 +66,11 @@ class MyImage3D
 		void FillInWith(unsigned short _value);
 
 		// Loading VTK files
-		vtkSmartPointer<vtkActor> LoadDataImage();
-		vtkSmartPointer<vtkActor> LoadSegmentedImage();
-		vtkSmartPointer<vtkActor> LoadSkeletonImage();
+		vtkSmartPointer<vtkActor> GetDataImage();
+		vtkSmartPointer<vtkActor> GetSegmentedImage();
+		vtkSmartPointer<vtkActor> GetSkeletonImage();
+
+		vtkSmartPointer<vtkActor> GetSegmentedOutline();
 };
 
 #endif
