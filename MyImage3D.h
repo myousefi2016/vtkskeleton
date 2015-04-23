@@ -44,6 +44,7 @@
 
 #include <vtkTubeFilter.h>
 #include <vtkStructuredPoints.h>
+#include <vtkInformation.h>
 
 using namespace std;
 
@@ -64,6 +65,7 @@ enum ImagePlane {
 class MyImage3D
 {
 	vtkSmartPointer<vtkStructuredPointsReader> dataReader, segmReader, skelReader;
+	vtkSmartPointer<vtkStructuredPoints> structuredPoints;
 	vtkSmartPointer<vtkPolyDataMapper> dataMapper, segmMapper, skelMapper, outlineMapper;
 	vtkSmartPointer<vtkActor> dataActor = NULL, segmActor = NULL, skelActor = NULL, outlineActor = NULL;
 	vtkSmartPointer<vtkVolume> raycastVolume = NULL;
@@ -99,6 +101,9 @@ class MyImage3D
 		void FillInWith(unsigned short _value);
 
 		void PointC();
+		// 2 help functions to PointC
+		void FindFirstUsedVoxel(int * vox1); 
+		void FindVoxelNeighbors(int * currentVoxel, int * parentVoxel);
 		
 
 		// Create an actor to control the level of detail in rendering

@@ -67,49 +67,110 @@ void MyImage3D::FillInWith(unsigned short _value)
 	}
 }
 
-// work in progress...
-void MyImage3D::PointC()
+// Problem: many voxels don't have neighbors. They are just hanging loosely.
+// Many voxels are neighborless because the skeleton image is not continuous.
+void MyImage3D::FindVoxelNeighbors(int * currentVoxel, int * parentVoxel)
 {
-	skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-	string  vessels_skel_file= "vessels_skel.vtk";
+	int dims[3];
+	structuredPoints->GetDimensions(dims);
 
-	skelReader->SetFileName(vessels_skel_file.c_str());
-	skelReader->Update();
-	vtkSmartPointer<vtkTubeFilter> tubeFilter = vtkSmartPointer<vtkTubeFilter>::New();
+	unsigned short int a,b,c, counter = 0;
+	a = currentVoxel[0]; b = currentVoxel[1]; c = currentVoxel[2];
 
-	vtkSmartPointer<vtkStructuredPoints> structuredPoints = skelReader->GetOutput();
-
-	double p[3];
-	structuredPoints->GetOrigin(p);
-	std::cout << "Origin point (x,y,z)->(" << p[0] << "," << p[1] << "," << p[2] << ")" << std::endl; // Works
-
-
-	int ID = structuredPoints->FindPoint(p);
-	std::cout << "Origin ID : " << ID << std::endl;
+	unsigned short* nextVoxelScalar;
 	
-	structuredPoints->GetPoint(ID+1, p);
-	std::cout << "Next point (x,y,z)->(" << p[0] << "," << p[1] << "," << p[2] << ")" << std::endl; // Works
+	short int x,y,z;
 
-	double* vox = static_cast<double*>(structuredPoints->GetScalarPointer(0,0,0));
-	cout << "Scalarpointer value: " << vox[2] << " " << structuredPoints->GetDimensions()[2] << endl;
-
-	double* vox2; int counter = 0;
-	for(int s = 0; s < structuredPoints->GetDimensions()[2]; s++)
+	for(x = -1; x <= 1; x++)
 	{
-		for(int r = 0; r < structuredPoints->GetDimensions()[1]; r++)
+		for(y = -1; y <= 1; y++)
 		{
-			for(int c = 0; c < structuredPoints->GetDimensions()[0]; c++)
+			for(z = -1; z <= 1; z++)
 			{
-				vox2 = static_cast<double*>(structuredPoints->GetScalarPointer(c,r,s));
-				if(vox2[0] != 0) 
+				if(x == 0 && y == 0 && z == 0) continue;
+				else if(a+x < 0 || a+x >= dims[0] || b+y < 0 || b+y >= dims[1] || c+z < 0 || c+z >= dims[2]) continue;
+
+				nextVoxelScalar = static_cast<unsigned short*>(structuredPoints->GetScalarPointer(a+x,b+y,c+z));
+
+				if(nextVoxelScalar[0] != 0)
 				{
+					if(a+x == parentVoxel[0] && b+y == parentVoxel[1] && c+z == parentVoxel[2]) continue;
+					parentVoxel[0] = a+x; parentVoxel[1] = y+b; parentVoxel[2] = c+z;
 					counter++;
-					std::cout << "Vox " << c << "," << r << "," << s << ": " << vox2[0] << std::endl;
+					std::cout << "Found neighbor voxel (x,y,z)->(" << a+x << "," << b+y << "," << c+z << ")" << std::endl;
+					currentVoxel[0] = x; currentVoxel[1] = y; currentVoxel[2] = z;
+					//return;
 				}
 			}
 		}
 	}
-	std::cout << "counter: " << counter << std::endl;
+	std::cout << "#Neighbors: " << counter << std::endl;
+}
+
+void MyImage3D::FindFirstUsedVoxel(int * vox1)
+{
+	unsigned short * vox;
+
+	int dims[3];
+	structuredPoints->GetDimensions(dims);
+	for(int x = 0; x < dims[0]; x++)
+	{
+		for(int y = 0; y < dims[1]; y++)
+		{
+			for(int z = 0; z < dims[2]; z++)
+			{
+				vox = static_cast<unsigned short*>(structuredPoints->GetScalarPointer(x,y,z));
+				if(vox[0] != 0)
+				{
+					vox1[0] = x; vox1[1] = y; vox1[2] = z;
+					return; 
+				}
+			}
+		}
+	}
+}
+
+// work in progress...
+void MyImage3D::PointC()
+{
+	skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+	string  vessels_skel_file = "vessels_skel.vtk";
+
+	skelReader->SetFileName(vessels_skel_file.c_str());
+	skelReader->Update();
+	
+	structuredPoints = skelReader->GetOutput();
+
+	/*double p[3];
+	structuredPoints->GetOrigin(p);
+	std::cout << "Origin point (x,y,z)->(" << p[0] << "," << p[1] << "," << p[2] << ")" << std::endl; // Works
+	int ID = structuredPoints->FindPoint(p);
+	std::cout << "Origin ID : " << ID << std::endl;*/
+
+	//vtkSmartPointer<vtkInformation> info = vtkSmartPointer<vtkInformation>::New();
+	//structuredPoints->GetScalarType(info);
+	
+	//std::cout << "Scalar type: " << structuredPoints->GetScalarTypeAsString() << std::endl;
+	//std::cout << "#Scalar components: " << structuredPoints->GetNumberOfScalarComponents() << std::endl;
+	
+	//structuredPoints->GetPoint(ID+1, p);
+	//std::cout << "Next point (x,y,z)->(" << p[0] << "," << p[1] << "," << p[2] << ")" << std::endl; // Works
+
+	//int dims[3];
+	//structuredPoints->GetDimensions(dims);
+	//std::cout << "Dimensions (x,y,z)->(" << dims[0] << "," << dims[1] << "," << dims[2] << ")" << std::endl; // Works
+	
+	int parentVox[3] = {-1,-1,-1};
+	int vox[3];
+	FindFirstUsedVoxel(vox);
+
+	std::cout << "Found 1st voxel (PointC) (x,y,z)->(" << vox[0] << "," << vox[1] << "," << vox[2] << ")" << std::endl; // Works
+	
+	for(int i = 0; i < 5; i++) FindVoxelNeighbors(vox, parentVox);
+
+
+
+	vtkSmartPointer<vtkTubeFilter> tubeFilter = vtkSmartPointer<vtkTubeFilter>::New();
 	
 
 }
