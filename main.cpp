@@ -243,8 +243,7 @@ void setupSegmentedImagePlanes()
 	vtkSmartPointer<vtkProperty> ipwProp = vtkSmartPointer<vtkProperty>::New();
 	vtkSmartPointer<vtkStructuredPointsReader> reader = image.GetSegmentedImageReader();
 
-	int imageDims[3];
-	reader->GetOutput()->GetDimensions(imageDims);
+	reader->GetOutput()->GetDimensions(image.dimensions);
 
 	//cout << "Image dims: " << imageDims[0] << "," << imageDims[1] << "," << imageDims[2] << endl;
 
@@ -265,7 +264,7 @@ void setupSegmentedImagePlanes()
 		image.planes[i]->SetResliceInterpolateToLinear();
 		image.planes[i]->SetInputConnection(reader->GetOutputPort());
 		image.planes[i]->SetPlaneOrientation(i);
-		image.planes[i]->SetSliceIndex(imageDims[i]/2);
+		image.planes[i]->SetSliceIndex(image.dimensions[i]/2);
 		image.planes[i]->DisplayTextOn();
 		image.planes[i]->SetDefaultRenderer(renderer);
 		image.planes[i]->SetWindowLevel(1358, -27);
@@ -383,11 +382,16 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 			togglePlane(Coronal);
 		}
 
-		if (key == "plus") {
+		if (key == "plus" || key == "minus") {
+			int currentSlice = image.planes[image.currentPlane]->GetSliceIndex();
 
-		}
-		if (key == "minus") {
+			// vtkImagePlaneWidget takes care of too big/small dimensions
+			if (key == "plus")
+				image.planes[image.currentPlane]->SetSliceIndex(currentSlice + 1);
+			else
+				image.planes[image.currentPlane]->SetSliceIndex(currentSlice - 1);
 
+			refreshWindow();
 		}
 	}
 

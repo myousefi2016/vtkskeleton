@@ -72,6 +72,7 @@ class MyImage3D
 
 		// Image planes
 		vtkSmartPointer<vtkImagePlaneWidget> planes[3];
+		int dimensions[3];
 
 		MyImage3D()
 		{
