@@ -161,7 +161,7 @@ void prepareMenu()
 	menuCommands->GetTextProperty()->SetFontSize(14);
 	menuCommands->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
 	menuCommands->SetDisplayPosition(menuPositionX, menuPositionY);
-	menuCommands->SetInput("# Segmented image:\n[s] sagittal view\n[t] transversal view\n[c] coronal view\n\n[p/m] zoom in/out\n[z] reset zoom\n[e/q] exit\n[i] close commands info");
+	menuCommands->SetInput("# Segmented image:\n[s] sagittal view\n[t] transversal view\n[c] coronal view\n[+/i] scroll through the slices\n[p/m] zoom in/out\n[z] reset zoom\n[e/q] exit\n[i] close commands info");
 	
 	menuVessels->GetTextProperty()->SetFontFamilyToCourier();
 	menuVessels->GetTextProperty()->SetFontSize(14);
@@ -212,7 +212,7 @@ void loadFile(VesselFile type)
 	{
 		case RayCast:
 			volume = image.GetRayCastingImage();
-			renderWindow->SetWindowName("Ray Casting (vessels_data.vtk)");
+			renderWindow->SetWindowName("Skeleton Visualisation - Volume visualization (vessels_data.vtk)");
 			renderer->AddVolume(volume);
 			return; // not break, we don't want to add vtkActor, only vtkVolume
 		case Segmented:
@@ -220,11 +220,11 @@ void loadFile(VesselFile type)
 			outlineActor = image.GetSegmentedOutline();
 			setupSegmentedImagePlanes();
 			renderer->AddActor(outlineActor);
-			renderWindow->SetWindowName("Skeleton Visualisation (vessels_seg.vtk)");
+			renderWindow->SetWindowName("Skeleton Visualisation - Segmented image (vessels_seg.vtk)");
 			break;
 		case Skeleton:
 			actor = image.GetSkeletonImage();
-			renderWindow->SetWindowName("Skeleton Visualisation (vessels_skel.vtk)");
+			renderWindow->SetWindowName("Skeleton Visualisation - Skeleton image (vessels_skel.vtk)");
 			break;
 	}
 
@@ -254,7 +254,7 @@ void setupSegmentedImagePlanes()
 		image.planes[i]->SetPicker(picker);
 		image.planes[i]->RestrictPlaneToVolumeOn();
 
-		// outline: Red, Green, Blue
+		// outline: Red/Green/Blue
 		double color[3] = {0, 0, 0};
 		color[i] = 1;
 		image.planes[i]->GetPlaneProperty()->SetColor(color);
@@ -267,9 +267,7 @@ void setupSegmentedImagePlanes()
 		image.planes[i]->SetSliceIndex(image.dimensions[i]/2);
 		image.planes[i]->DisplayTextOn();
 		image.planes[i]->SetDefaultRenderer(renderer);
-		image.planes[i]->SetWindowLevel(1358, -27);
-		image.planes[i]->SetEnabled(0);
-		image.planes[i]->InteractionOff();
+		//image.planes[i]->SetWindowLevel(1358, -27);
 	}
 }
 
@@ -369,20 +367,17 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	// Segmented image
 	if (image.currentVessel == Segmented)
 	{
-		if (key == "s") {
-			cout << "Chosen: Sagittal" << endl;
+		if (key == "s")
 			togglePlane(Sagittal);
-		}
-		if (key == "t") {
-			cout << "Chosen: Transversal" << endl;
+	
+		if (key == "t")
 			togglePlane(Transversal);
-		}
-		if (key == "c") {
-			cout << "Chosen: Coronal" << endl;
+		
+		if (key == "c")
 			togglePlane(Coronal);
-		}
 
-		if (key == "plus" || key == "minus") {
+		if (key == "plus" || key == "minus")
+		{
 			int currentSlice = image.planes[image.currentPlane]->GetSliceIndex();
 
 			// vtkImagePlaneWidget takes care of too big/small dimensions
