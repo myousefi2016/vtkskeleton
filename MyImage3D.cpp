@@ -111,7 +111,8 @@ vtkSmartPointer<vtkVolume> MyImage3D::GetRayCastingImage()
 		return raycastVolume;
 
 	string vesselsDataFile = "vessels_data.vtk";
-
+	
+	dataReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
 	dataReader->SetFileName(vesselsDataFile.c_str());
 	dataReader->Update();
  
