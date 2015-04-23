@@ -45,10 +45,9 @@ using namespace std;
 
 enum VesselFile {
 	NotLoaded,
-	Segmented,
-	Skeleton,
 	RayCast,
-	Loading
+	Segmented,
+	Skeleton
 };
 
 enum ImagePlane {

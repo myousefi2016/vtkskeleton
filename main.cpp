@@ -185,9 +185,19 @@ void loadVessels(VesselFile type)
 	// drop multiple loads
 	if (loadingData || image.currentVessel == type)
 		return;
-	
+
 	toggleLoading(); // Loading on
+
+	// hide planes if any visible before changing to ray casting/skeleton view
+	togglePlane(image.currentPlane);
+
+	// remove actors and/or volumes
+	renderer->RemoveActor(actor);
+	renderer->RemoveActor(outlineActor);
+	renderer->RemoveVolume(volume);
+
 	loadFile(type); // Load file
+
 	toggleLoading(); // Loading off
 }
 
@@ -196,14 +206,7 @@ void loadVessels(VesselFile type)
  */
 void loadFile(VesselFile type)
 {
-	// hide planes if any visible before changing to ray casting/skeleton view
-	togglePlane(image.currentPlane);
-
 	image.currentVessel = type;
-
-	renderer->RemoveActor(actor);
-	renderer->RemoveActor(outlineActor);
-	renderer->RemoveVolume(volume);
 
 	switch (type)
 	{
@@ -310,7 +313,7 @@ void toggleLoading()
  */
 void togglePlane(ImagePlane planeToShow)
 {
-	if (image.currentVessel != Segmented || actor == NULL)
+	if (image.currentVessel != Segmented)
 		return;
 
 	for (int i = 0; i < 3; i++)
