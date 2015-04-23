@@ -25,6 +25,19 @@
 #include <vtkOutlineFilter.h>
 #include <vtkProperty.h>
 
+// Ray cast
+#include <vtkVolumeProperty.h>
+#include <vtkColorTransferFunction.h>
+
+#include <vtkVolumeRayCastMapper.h>
+#include <vtkVolumeRayCastFunction.h>
+#include <vtkVolumeRayCastCompositeFunction.h>
+#include <vtkVolumeRayCastIsosurfaceFunction.h>
+#include <vtkVolumeRayCastMIPFunction.h>
+
+#include <vtkLODActor.h>
+#include <vtkVolume.h>
+
 using namespace std;
 
 enum VesselFile {
@@ -32,6 +45,7 @@ enum VesselFile {
 	Data,
 	Segmented,
 	Skeleton,
+	RayCast,
 	Loading
 };
 
@@ -40,6 +54,7 @@ class MyImage3D
 	vtkSmartPointer<vtkStructuredPointsReader> dataReader, segmReader, skelReader;
 	vtkSmartPointer<vtkPolyDataMapper> dataMapper, segmMapper, skelMapper, outlineMapper;
 	vtkSmartPointer<vtkActor> dataActor = NULL, segmActor = NULL, skelActor = NULL, outlineActor = NULL;
+	vtkSmartPointer<vtkVolume> raycastVolume = NULL;
 
 	public:
 
@@ -65,8 +80,12 @@ class MyImage3D
 		// Fill in the image with the given value
 		void FillInWith(unsigned short _value);
 
+		// Create an actor to control the level of detail in rendering
+		vtkSmartPointer<vtkLODActor> SetLOD();
+
 		// Loading VTK files
 		vtkSmartPointer<vtkActor> GetDataImage();
+		vtkSmartPointer<vtkVolume> GetRayCastingImage();
 		vtkSmartPointer<vtkActor> GetSegmentedImage();
 		vtkSmartPointer<vtkActor> GetSkeletonImage();
 

@@ -91,6 +91,65 @@ vtkSmartPointer<vtkActor> MyImage3D::GetDataImage()
 	return dataActor;
 }
 
+// Work in progress....
+vtkSmartPointer<vtkLODActor> MyImage3D::SetLOD()
+{
+	vtkSmartPointer<vtkLODActor> lodActor = vtkSmartPointer<vtkLODActor>::New();
+
+	//vtkSmartPointer<vtkOutlineFilter> lowResFilter = vtkSmartPointer<vtkOutlineFilter>::New();
+	//vtkSmartPointer<vtkMaskPoints> medResFilter = vtkSmartPointer<vtkMaskPoints>::New();
+	
+	//lodActor->SetLowResFilter(lowResFilter);
+	//lodActor->SetMediumResFilter(medResFilter);
+
+	return lodActor;
+}
+
+vtkSmartPointer<vtkVolume> MyImage3D::GetRayCastingImage()
+{
+	if (raycastVolume != NULL)
+		return raycastVolume;
+
+	string vesselsDataFile = "vessels_data.vtk";
+
+	dataReader->SetFileName(vesselsDataFile.c_str());
+	dataReader->Update();
+ 
+	vtkSmartPointer<vtkVolumeRayCastMapper> rayCastMapper = vtkSmartPointer<vtkVolumeRayCastMapper>::New();
+	rayCastMapper->SetInputConnection(dataReader->GetOutputPort());
+
+	// I may try these other two functions later...
+	//tkSmartPointer<vtkVolumeRayCastIsosurfaceFunction> rcIsosurfaceFun = vtkSmartPointer<vtkVolumeRayCastIsosurfaceFunction>::New();
+	//vtkSmartPointer<vtkVolumeRayCastCompositeFunction> rcCompositeFun = vtkSmartPointer<vtkVolumeRayCastCompositeFunction>::New();
+	vtkSmartPointer<vtkVolumeRayCastMIPFunction> rcMipFun = vtkSmartPointer<vtkVolumeRayCastMIPFunction>::New();
+
+	rayCastMapper->SetVolumeRayCastFunction(rcMipFun);
+
+	raycastVolume = vtkSmartPointer<vtkVolume>::New();
+	raycastVolume->SetMapper(rayCastMapper);
+
+	vtkSmartPointer<vtkVolumeProperty> volumeProperty = vtkSmartPointer<vtkVolumeProperty>::New();
+
+	vtkSmartPointer<vtkColorTransferFunction> volumeColor = vtkSmartPointer<vtkColorTransferFunction>::New();
+	// TODO Haven't really figured this stuff out yet. Maps voxel intensity to colors.
+	volumeColor->AddRGBPoint(5,    2.0, 1.0, 1.0);
+	volumeColor->AddRGBPoint(100, 0.1, 0.5, 0.3);
+	volumeColor->AddRGBPoint(200, 0.5, 0.9, 0.0);
+	volumeColor->AddRGBPoint(300,  0.1, 0.5, 0.5);
+	
+	volumeProperty->SetColor(volumeColor);
+	//volumeProperty->ShadeOn(); // Doesn't make any difference in our case.
+	//volumeProperty->SetAmbient(100); // Can't see what this does either
+	//volumeProperty->SetDiffuse(0.9); // Neither with this...
+	//volumeProperty->SetSpecular(20);
+	//volumeProperty->SetSpecularPower(10);
+
+	raycastVolume->SetProperty(volumeProperty);
+	
+	//return vtkSmartPointer<vtkVolume>::New();
+	return raycastVolume;
+}
+
 vtkSmartPointer<vtkActor> MyImage3D::GetSegmentedImage()
 {
 	if (segmActor != NULL)
