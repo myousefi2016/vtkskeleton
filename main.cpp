@@ -138,6 +138,17 @@ void renderVTK()
 	renderWindowInteractor->Start();
 }
 
+
+/*
+ * Set the update rate (level of detail of the image) in 'lod' frames/second
+ */
+void setLOD(int lod)
+{
+	//if(lodActor == NULL || renderWindow == NULL) return 0;
+	renderWindow->SetDesiredUpdateRate(lod);
+}
+
+
 /*
  * Prepare menu and info messages
  */

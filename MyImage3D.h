@@ -40,6 +40,10 @@
 
 #include <vtkLODActor.h>
 #include <vtkVolume.h>
+#include <vtkMaskPoints.h>
+
+#include <vtkTubeFilter.h>
+#include <vtkStructuredPoints.h>
 
 using namespace std;
 
@@ -93,6 +97,9 @@ class MyImage3D
 
 		// Fill in the image with the given value
 		void FillInWith(unsigned short _value);
+
+		void PointC();
+		
 
 		// Create an actor to control the level of detail in rendering
 		vtkSmartPointer<vtkLODActor> SetLOD();

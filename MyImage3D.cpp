@@ -67,28 +67,76 @@ void MyImage3D::FillInWith(unsigned short _value)
 	}
 }
 
+// work in progress...
+void MyImage3D::PointC()
+{
+	skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+	string  vessels_skel_file= "vessels_skel.vtk";
+
+	skelReader->SetFileName(vessels_skel_file.c_str());
+	skelReader->Update();
+	vtkSmartPointer<vtkTubeFilter> tubeFilter = vtkSmartPointer<vtkTubeFilter>::New();
+
+	vtkSmartPointer<vtkStructuredPoints> structuredPoints = skelReader->GetOutput();
+
+	double p[3];
+	structuredPoints->GetOrigin(p);
+	std::cout << "Origin point (x,y,z)->(" << p[0] << "," << p[1] << "," << p[2] << ")" << std::endl; // Works
+
+
+	int ID = structuredPoints->FindPoint(p);
+	std::cout << "Origin ID : " << ID << std::endl;
+	
+	structuredPoints->GetPoint(ID+1, p);
+	std::cout << "Next point (x,y,z)->(" << p[0] << "," << p[1] << "," << p[2] << ")" << std::endl; // Works
+
+	double* vox = static_cast<double*>(structuredPoints->GetScalarPointer(0,0,0));
+	cout << "Scalarpointer value: " << vox[2] << " " << structuredPoints->GetDimensions()[2] << endl;
+
+	double* vox2; int counter = 0;
+	for(int s = 0; s < structuredPoints->GetDimensions()[2]; s++)
+	{
+		for(int r = 0; r < structuredPoints->GetDimensions()[1]; r++)
+		{
+			for(int c = 0; c < structuredPoints->GetDimensions()[0]; c++)
+			{
+				vox2 = static_cast<double*>(structuredPoints->GetScalarPointer(c,r,s));
+				if(vox2[0] != 0) 
+				{
+					counter++;
+					std::cout << "Vox " << c << "," << r << "," << s << ": " << vox2[0] << std::endl;
+				}
+			}
+		}
+	}
+	std::cout << "counter: " << counter << std::endl;
+	
+
+}
+
+
 // Work in progress....
 vtkSmartPointer<vtkLODActor> MyImage3D::SetLOD()
 {
 	vtkSmartPointer<vtkLODActor> lodActor = vtkSmartPointer<vtkLODActor>::New();
 
-	//vtkSmartPointer<vtkOutlineFilter> lowResFilter = vtkSmartPointer<vtkOutlineFilter>::New();
-	//vtkSmartPointer<vtkMaskPoints> medResFilter = vtkSmartPointer<vtkMaskPoints>::New();
+	vtkSmartPointer<vtkOutlineFilter> lowResFilter = vtkSmartPointer<vtkOutlineFilter>::New();
+	vtkSmartPointer<vtkMaskPoints> medResFilter = vtkSmartPointer<vtkMaskPoints>::New();
 	
-	//lodActor->SetLowResFilter(lowResFilter);
-	//lodActor->SetMediumResFilter(medResFilter);
+	lodActor->SetLowResFilter(lowResFilter);
+	
+	lodActor->SetMediumResFilter(medResFilter);
+	lodActor->SetNumberOfCloudPoints(20);
 
 	return lodActor;
 }
 
 vtkSmartPointer<vtkVolume> MyImage3D::GetRayCastingImage()
 {
-	if (raycastVolume != NULL)
-		return raycastVolume;
-
 	string vesselsDataFile = "vessels_data.vtk";
-	
+
 	dataReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+
 	dataReader->SetFileName(vesselsDataFile.c_str());
 	dataReader->Update();
  
@@ -96,24 +144,27 @@ vtkSmartPointer<vtkVolume> MyImage3D::GetRayCastingImage()
 	rayCastMapper->SetInputConnection(dataReader->GetOutputPort());
 
 	// I may try these other two functions later...
-	//tkSmartPointer<vtkVolumeRayCastIsosurfaceFunction> rcIsosurfaceFun = vtkSmartPointer<vtkVolumeRayCastIsosurfaceFunction>::New();
+	//vtkSmartPointer<vtkVolumeRayCastIsosurfaceFunction> rcIsosurfaceFun = vtkSmartPointer<vtkVolumeRayCastIsosurfaceFunction>::New();
 	//vtkSmartPointer<vtkVolumeRayCastCompositeFunction> rcCompositeFun = vtkSmartPointer<vtkVolumeRayCastCompositeFunction>::New();
 	vtkSmartPointer<vtkVolumeRayCastMIPFunction> rcMipFun = vtkSmartPointer<vtkVolumeRayCastMIPFunction>::New();
 
 	rayCastMapper->SetVolumeRayCastFunction(rcMipFun);
 
-	raycastVolume = vtkSmartPointer<vtkVolume>::New();
-	raycastVolume->SetMapper(rayCastMapper);
+	vtkSmartPointer<vtkVolume> volume = vtkSmartPointer<vtkVolume>::New();
+	volume->SetMapper(rayCastMapper);
 
 	vtkSmartPointer<vtkVolumeProperty> volumeProperty = vtkSmartPointer<vtkVolumeProperty>::New();
 
 	vtkSmartPointer<vtkColorTransferFunction> volumeColor = vtkSmartPointer<vtkColorTransferFunction>::New();
 	// TODO Haven't really figured this stuff out yet. Maps voxel intensity to colors.
+
+	// Source: http://www.vtk.org/Wiki/VTK/Examples/Cxx/Visualization/RenderPassExistingContext (2015-04-20)
 	volumeColor->AddRGBPoint(5,    2.0, 1.0, 1.0);
 	volumeColor->AddRGBPoint(100, 0.1, 0.5, 0.3);
 	volumeColor->AddRGBPoint(200, 0.5, 0.9, 0.0);
 	volumeColor->AddRGBPoint(300,  0.1, 0.5, 0.5);
 	
+
 	volumeProperty->SetColor(volumeColor);
 	//volumeProperty->ShadeOn(); // Doesn't make any difference in our case.
 	//volumeProperty->SetAmbient(100); // Can't see what this does either
@@ -121,10 +172,9 @@ vtkSmartPointer<vtkVolume> MyImage3D::GetRayCastingImage()
 	//volumeProperty->SetSpecular(20);
 	//volumeProperty->SetSpecularPower(10);
 
-	raycastVolume->SetProperty(volumeProperty);
+	volume->SetProperty(volumeProperty);
 	
-	//return vtkSmartPointer<vtkVolume>::New();
-	return raycastVolume;
+	return volume;
 }
 
 vtkSmartPointer<vtkActor> MyImage3D::GetSegmentedImage()
