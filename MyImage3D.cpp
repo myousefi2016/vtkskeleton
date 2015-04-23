@@ -67,30 +67,6 @@ void MyImage3D::FillInWith(unsigned short _value)
 	}
 }
 
-vtkSmartPointer<vtkActor> MyImage3D::GetDataImage()
-{
-	if (dataActor != NULL)
-		return dataActor;
-
-	string vesselsDataFile = "vessels_data.vtk";
-	
-	dataReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-	dataReader->SetFileName(vesselsDataFile.c_str());
-	dataReader->Update();
- 
-	vtkSmartPointer<vtkImageDataGeometryFilter> geometryFilter = vtkSmartPointer<vtkImageDataGeometryFilter>::New();
-	geometryFilter->SetInputConnection(dataReader->GetOutputPort());
-	geometryFilter->Update();
-	
-	dataMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	dataMapper->SetInputConnection(geometryFilter->GetOutputPort());
-
-	dataActor = vtkSmartPointer<vtkActor>::New();
-	dataActor->SetMapper(dataMapper);
-
-	return dataActor;
-}
-
 // Work in progress....
 vtkSmartPointer<vtkLODActor> MyImage3D::SetLOD()
 {

@@ -45,7 +45,6 @@ using namespace std;
 
 enum VesselFile {
 	NotLoaded,
-	Data,
 	Segmented,
 	Skeleton,
 	RayCast,
@@ -99,7 +98,6 @@ class MyImage3D
 		vtkSmartPointer<vtkLODActor> SetLOD();
 
 		// Loading VTK files
-		vtkSmartPointer<vtkActor> GetDataImage();
 		vtkSmartPointer<vtkVolume> GetRayCastingImage();
 		vtkSmartPointer<vtkActor> GetSegmentedImage();
 		vtkSmartPointer<vtkActor> GetSkeletonImage();

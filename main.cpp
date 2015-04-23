@@ -211,10 +211,11 @@ void loadFile(VesselFile type)
 	renderer->RemoveVolume(volume);
 
 	switch (type) {
-	case Data:
-		actor = image.GetDataImage();
-		renderWindow->SetWindowName("Skeleton Visualisation (vessels_data.vtk)");
-		break;
+	case RayCast:
+		volume = image.GetRayCastingImage();
+		renderWindow->SetWindowName("Ray Casting (vessels_data.vtk)");
+		renderer->AddVolume(volume);
+		return; // not break, we don't want to add vtkActor, only vtkVolume
 	case Segmented:
 		actor = image.GetSegmentedImage();
 		outlineActor = image.GetSegmentedOutline();
@@ -226,11 +227,6 @@ void loadFile(VesselFile type)
 		actor = image.GetSkeletonImage();
 		renderWindow->SetWindowName("Skeleton Visualisation (vessels_skel.vtk)");
 		break;
-	case RayCast:
-		volume = image.GetRayCastingImage();
-		renderWindow->SetWindowName("Ray Casting (vessels_data.vtk)");
-		renderer->AddVolume(volume);
-		return; // not break, we don't want to add vtkActor, only vtkVolume
 	}
 
 	renderer->AddActor(actor);
@@ -251,7 +247,7 @@ void setupSegmentedImagePlanes()
 	int imageDims[3];
 	reader->GetOutput()->GetDimensions(imageDims);
 
-	cout << "Image dims: " << imageDims[0] << "," << imageDims[1] << "," << imageDims[2] << endl;
+	//cout << "Image dims: " << imageDims[0] << "," << imageDims[1] << "," << imageDims[2] << endl;
 
 	for (int i = 0; i < 3; i++)
     {
@@ -403,7 +399,7 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	}
 
 	// Vessel files
-	if (key == "6") loadVessels(RayCast); //loadVessels(Data);
+	if (key == "6") loadVessels(RayCast);
 	if (key == "7") loadVessels(Segmented);
 	if (key == "8") loadVessels(Skeleton);
 }
