@@ -238,7 +238,7 @@ vtkSmartPointer<vtkActor> MyImage3D::GetSegmentedOutline()
   
 	outlineActor = vtkSmartPointer<vtkActor>::New();
 	outlineActor->SetMapper(outlineMapper);
-	outlineActor->GetProperty()->SetColor(0, 0, 0);
+	outlineActor->GetProperty()->SetColor(0.2, 0.2, 0.2);
 
 	return outlineActor;
 }

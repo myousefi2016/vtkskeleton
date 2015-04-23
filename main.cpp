@@ -256,8 +256,6 @@ void setupSegmentedImagePlanes()
 
 	reader->GetOutput()->GetDimensions(image.dimensions);
 
-	//cout << "Image dims: " << imageDims[0] << "," << imageDims[1] << "," << imageDims[2] << endl;
-
 	for (int i = 0; i < 3; i++)
     {
 		image.planes[i] = vtkSmartPointer<vtkImagePlaneWidget>::New();
@@ -278,7 +276,7 @@ void setupSegmentedImagePlanes()
 		image.planes[i]->SetSliceIndex(image.dimensions[i]/2);
 		image.planes[i]->DisplayTextOn();
 		image.planes[i]->SetDefaultRenderer(renderer);
-		//image.planes[i]->SetWindowLevel(1358, -27);
+		image.planes[i]->SetWindowLevel(1358, -27); // changes the color of plane
 	}
 }
 
