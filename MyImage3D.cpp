@@ -131,12 +131,15 @@ vtkSmartPointer<vtkLODActor> MyImage3D::SetLOD()
 	return lodActor;
 }
 
+// Ref: https://github.com/Kitware/VTK/tree/Examples/Cxx/Visualization/RenderPassExistingContext
 vtkSmartPointer<vtkVolume> MyImage3D::GetRayCastingImage()
 {
+	if (raycastVolume != NULL)
+		return raycastVolume;
+
 	string vesselsDataFile = "vessels_data.vtk";
 
 	dataReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-
 	dataReader->SetFileName(vesselsDataFile.c_str());
 	dataReader->Update();
  
@@ -150,31 +153,24 @@ vtkSmartPointer<vtkVolume> MyImage3D::GetRayCastingImage()
 
 	rayCastMapper->SetVolumeRayCastFunction(rcMipFun);
 
-	vtkSmartPointer<vtkVolume> volume = vtkSmartPointer<vtkVolume>::New();
-	volume->SetMapper(rayCastMapper);
-
-	vtkSmartPointer<vtkVolumeProperty> volumeProperty = vtkSmartPointer<vtkVolumeProperty>::New();
-
+	raycastVolume = vtkSmartPointer<vtkVolume>::New();
+	raycastVolume->SetMapper(rayCastMapper);
+	
 	vtkSmartPointer<vtkColorTransferFunction> volumeColor = vtkSmartPointer<vtkColorTransferFunction>::New();
-	// TODO Haven't really figured this stuff out yet. Maps voxel intensity to colors.
-
-	// Source: http://www.vtk.org/Wiki/VTK/Examples/Cxx/Visualization/RenderPassExistingContext (2015-04-20)
-	volumeColor->AddRGBPoint(5,    2.0, 1.0, 1.0);
-	volumeColor->AddRGBPoint(100, 0.1, 0.5, 0.3);
-	volumeColor->AddRGBPoint(200, 0.5, 0.9, 0.0);
-	volumeColor->AddRGBPoint(300,  0.1, 0.5, 0.5);
+	volumeColor->AddRGBPoint(0,   0.0, 1.0, 0.0);
+	volumeColor->AddRGBPoint(10, 1.0, 1.0, 1.0); // the biggest group of points = white
+	volumeColor->AddRGBPoint(20, 1.0, 1.0, 1.0); // the biggest group of points = white
+	volumeColor->AddRGBPoint(25, 1.0, 1.0, 1.0); // the biggest group of points = white
+	volumeColor->AddRGBPoint(75,  1.0, 0.9, 0.8);
+	volumeColor->AddRGBPoint(150, 1.0, 0.2, 0.2);
+	volumeColor->AddRGBPoint(200, 1.0, 0.7, 0.0);
 	
-
+	vtkSmartPointer<vtkVolumeProperty> volumeProperty = vtkSmartPointer<vtkVolumeProperty>::New();
 	volumeProperty->SetColor(volumeColor);
-	//volumeProperty->ShadeOn(); // Doesn't make any difference in our case.
-	//volumeProperty->SetAmbient(100); // Can't see what this does either
-	//volumeProperty->SetDiffuse(0.9); // Neither with this...
-	//volumeProperty->SetSpecular(20);
-	//volumeProperty->SetSpecularPower(10);
-
-	volume->SetProperty(volumeProperty);
 	
-	return volume;
+	raycastVolume->SetProperty(volumeProperty);
+	
+	return raycastVolume;
 }
 
 vtkSmartPointer<vtkActor> MyImage3D::GetSegmentedImage()
@@ -222,16 +218,6 @@ vtkSmartPointer<vtkActor> MyImage3D::GetSkeletonImage()
 	segmMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 	segmMapper->SetInputConnection(contourFilter->GetOutputPort()); 
 	segmMapper->ScalarVisibilityOff();
-
-	//vtkSmartPointer<vtkPolyData> polyData = polydataMapper->GetInput();
-	//for(vtkIdType i = 0; i < polyData->GetNumberOfPoints(); i++)
- //   {
-	//	double p[3];
-	//	polyData->GetPoint(i,p);
-	//	// This is identical to:
-	//	// polydata->GetPoints()->GetPoint(i,p);
-	//	std::cout << "Point " << i << " : (" << p[0] << " " << p[1] << " " << p[2] << ")" << std::endl;
- //   }
 	
 	skelActor = vtkSmartPointer<vtkActor>::New();
 	skelActor->SetMapper(segmMapper);
