@@ -183,20 +183,12 @@ void prepareMenu()
 void loadVessels(VesselFile type)
 {
 	// drop multiple loads
-	if (image.currentVessel == Loading || image.currentVessel == type)
+	if (loadingData || image.currentVessel == type)
 		return;
 	
-	// Loading on
-	image.currentVessel = Loading;
-	renderer->AddActor2D(menuLoading);
-	refreshWindow();
-
-	// Load file
-	loadFile(type);
-	
-	// Loading off
-	renderer->RemoveActor2D(menuLoading);
-	refreshWindow();
+	toggleLoading(); // Loading on
+	loadFile(type); // Load file
+	toggleLoading(); // Loading off
 }
 
 /*
@@ -204,29 +196,33 @@ void loadVessels(VesselFile type)
  */
 void loadFile(VesselFile type)
 {
+	// hide planes if any visible before changing to ray casting/skeleton view
+	togglePlane(image.currentPlane);
+
 	image.currentVessel = type;
 
 	renderer->RemoveActor(actor);
 	renderer->RemoveActor(outlineActor);
 	renderer->RemoveVolume(volume);
 
-	switch (type) {
-	case RayCast:
-		volume = image.GetRayCastingImage();
-		renderWindow->SetWindowName("Ray Casting (vessels_data.vtk)");
-		renderer->AddVolume(volume);
-		return; // not break, we don't want to add vtkActor, only vtkVolume
-	case Segmented:
-		actor = image.GetSegmentedImage();
-		outlineActor = image.GetSegmentedOutline();
-		setupSegmentedImagePlanes();
-		renderer->AddActor(outlineActor);
-		renderWindow->SetWindowName("Skeleton Visualisation (vessels_seg.vtk)");
-		break;
-	case Skeleton:
-		actor = image.GetSkeletonImage();
-		renderWindow->SetWindowName("Skeleton Visualisation (vessels_skel.vtk)");
-		break;
+	switch (type)
+	{
+		case RayCast:
+			volume = image.GetRayCastingImage();
+			renderWindow->SetWindowName("Ray Casting (vessels_data.vtk)");
+			renderer->AddVolume(volume);
+			return; // not break, we don't want to add vtkActor, only vtkVolume
+		case Segmented:
+			actor = image.GetSegmentedImage();
+			outlineActor = image.GetSegmentedOutline();
+			setupSegmentedImagePlanes();
+			renderer->AddActor(outlineActor);
+			renderWindow->SetWindowName("Skeleton Visualisation (vessels_seg.vtk)");
+			break;
+		case Skeleton:
+			actor = image.GetSkeletonImage();
+			renderWindow->SetWindowName("Skeleton Visualisation (vessels_skel.vtk)");
+			break;
 	}
 
 	renderer->AddActor(actor);
@@ -270,7 +266,7 @@ void setupSegmentedImagePlanes()
 		image.planes[i]->DisplayTextOn();
 		image.planes[i]->SetDefaultRenderer(renderer);
 		image.planes[i]->SetWindowLevel(1358, -27);
-		image.planes[i]->Off();
+		image.planes[i]->SetEnabled(0);
 		image.planes[i]->InteractionOff();
 	}
 }
@@ -280,13 +276,17 @@ void setupSegmentedImagePlanes()
  */
 void toggleMenu()
 {
-	if (menuInfoVisible) { // we will see list of commands
+	if (menuInfoVisible)
+	{ // we will see list of commands
 		renderer->RemoveActor2D(menuInfo);
 		renderer->AddActor2D(menuCommands);
-	} else {
+	}
+	else
+	{
 		renderer->RemoveActor2D(menuCommands);
 		renderer->AddActor2D(menuInfo);
 	}
+
 	menuInfoVisible = !menuInfoVisible;
 	renderWindowInteractor->Render();
 }
@@ -296,11 +296,11 @@ void toggleMenu()
  */
 void toggleLoading()
 {
-	if (loadingData) {
+	if (loadingData)
 		renderer->RemoveActor2D(menuLoading);
-	} else {
+	else
 		renderer->AddActor2D(menuLoading);
-	}
+
 	loadingData = !loadingData;
 	refreshWindow();
 }
@@ -310,22 +310,35 @@ void toggleLoading()
  */
 void togglePlane(ImagePlane planeToShow)
 {
-	if (image.currentVessel != Segmented)
+	if (image.currentVessel != Segmented || actor == NULL)
 		return;
 
-	cout << "Current Plane = " << image.currentPlane << endl;
-
-	for (int i = 0; i < 3; i++) {
-		if (planeToShow == i) {
-			if (image.currentPlane == planeToShow) { // the same key second time = hide
-				image.planes[i]->Off();
+	for (int i = 0; i < 3; i++)
+	{
+		if (planeToShow == i)
+		{
+			if (image.currentPlane == planeToShow)
+			{
+				// the same key second time -> hide
+				image.planes[i]->SetEnabled(0);
 				image.currentPlane = None;
-			} else { // show chosen plane
-				image.planes[i]->On();
-				image.currentPlane = planeToShow;
+
+				// no planes = add Segmented image again
+				renderer->AddActor(actor);
 			}
-		} else { // hide the rest of the planes
-			image.planes[i]->Off();
+			else
+			{ // show chosen plane
+				image.planes[i]->SetEnabled(1);
+				image.currentPlane = planeToShow;
+
+				// plane visible = remove Segmented image
+				renderer->RemoveActor(actor);
+			}
+			refreshWindow();
+		}
+		else
+		{ // hide the rest of the planes
+			image.planes[i]->SetEnabled(0);
 		}
 	}
 }
@@ -355,16 +368,16 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	if (image.currentVessel == Segmented)
 	{
 		if (key == "s") {
+			cout << "Chosen: Sagittal" << endl;
 			togglePlane(Sagittal);
-			cout << "Sagittal" << endl;
 		}
 		if (key == "t") {
+			cout << "Chosen: Transversal" << endl;
 			togglePlane(Transversal);
-			cout << "Transversal" << endl;
 		}
 		if (key == "c") {
+			cout << "Chosen: Coronal" << endl;
 			togglePlane(Coronal);
-			cout << "Coronal" << endl;
 		}
 
 		if (key == "plus") {
