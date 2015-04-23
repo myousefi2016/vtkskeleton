@@ -230,3 +230,8 @@ vtkSmartPointer<vtkActor> MyImage3D::GetSegmentedOutline()
 
 	return outlineActor;
 }
+
+vtkSmartPointer<vtkStructuredPointsReader> MyImage3D::GetSegmentedImageReader()
+{
+	return segmReader;
+}

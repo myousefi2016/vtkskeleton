@@ -18,7 +18,9 @@
 #include <vtkCallbackCommand.h>
 
 // 
-#include <vtkImagePlaneWidget.h>
+#include <vtkCellPicker.h>
+#include <vtkStructuredPointsReader.h>
+#include <vtkStructuredPoints.h>
 
 #include "MyImage3D.h"
 
@@ -28,11 +30,16 @@ using namespace std;
 void initVTK();
 void renderVTK();
 void prepareMenu();
-void toggleMenu();
-void toggleLoading();
 void loadVessels();
 void loadFile(VesselFile type);
+void setupSegmentedImagePlanes();
+
+// UI functions
+void toggleMenu();
+void toggleLoading();
+void togglePlane(ImagePlane planeToShow);
 void refreshWindow();
+
 void KeypressCallbackFunction (vtkObject* caller, long unsigned int eventId, void* clientData, void* callData);
 
 // VTK window
@@ -123,19 +130,11 @@ void initVTK()
 
 	renderWindowInteractor->SetRenderWindow(renderWindow);
 	renderWindowInteractor->SetInteractorStyle(interactorStyle);
-
-	//planeWidget = vtkSmartPointer<vtkImagePlaneWidget>::New();
-	//planeWidget->SetInteractor(renderWindowInteractor);
- 
-	//double origin[3] = {0, 1, 0};
-	//planeWidget->SetOrigin(origin);
-	//planeWidget->UpdatePlacement();
 }
 
 void renderVTK()
 {
 	renderWindow->Render();
-	//planeWidget->On();
 	renderWindowInteractor->Start();
 }
 
@@ -179,36 +178,6 @@ void prepareMenu()
 }
 
 /*
- * Used to show/hide available commands
- */
-void toggleMenu()
-{
-	if (menuInfoVisible) { // we will see list of commands
-		renderer->RemoveActor2D(menuInfo);
-		renderer->AddActor2D(menuCommands);
-	} else {
-		renderer->RemoveActor2D(menuCommands);
-		renderer->AddActor2D(menuInfo);
-	}
-	menuInfoVisible = !menuInfoVisible;
-	renderWindowInteractor->Render();
-}
-
-/*
- * Shows loading message, used for VTK files when the window freezes.
- */
-void toggleLoading()
-{
-	if (loadingData) {
-		renderer->RemoveActor2D(menuLoading);
-	} else {
-		renderer->AddActor2D(menuLoading);
-	}
-	loadingData = !loadingData;
-	refreshWindow();
-}
-
-/*
  * Handles loading different vessels on user's key press
  */
 void loadVessels(VesselFile type)
@@ -226,16 +195,17 @@ void loadVessels(VesselFile type)
 	loadFile(type);
 	
 	// Loading off
-	image.currentVessel = type;
 	renderer->RemoveActor2D(menuLoading);
 	refreshWindow();
 }
 
 /*
- * Loads demanded file and changes window title
+ * Loads requested file and changes window title
  */
 void loadFile(VesselFile type)
 {
+	image.currentVessel = type;
+
 	renderer->RemoveActor(actor);
 	renderer->RemoveActor(outlineActor);
 	renderer->RemoveVolume(volume);
@@ -248,6 +218,7 @@ void loadFile(VesselFile type)
 	case Segmented:
 		actor = image.GetSegmentedImage();
 		outlineActor = image.GetSegmentedOutline();
+		setupSegmentedImagePlanes();
 		renderer->AddActor(outlineActor);
 		renderWindow->SetWindowName("Skeleton Visualisation (vessels_seg.vtk)");
 		break;
@@ -259,9 +230,108 @@ void loadFile(VesselFile type)
 		volume = image.GetRayCastingImage();
 		renderWindow->SetWindowName("Ray Casting (vessels_data.vtk)");
 		renderer->AddVolume(volume);
-		return;
+		return; // not break, we don't want to add vtkActor, only vtkVolume
 	}
+
 	renderer->AddActor(actor);
+}
+
+/*
+ * Function to setup image planes for segmented image
+ * Ref: https://github.com/Kitware/VTK/tree/master/Examples/GUI/Qt/FourPaneViewer
+ */
+void setupSegmentedImagePlanes()
+{
+	vtkSmartPointer<vtkCellPicker> picker = vtkSmartPointer<vtkCellPicker>::New();
+	picker->SetTolerance(0.005);
+
+	vtkSmartPointer<vtkProperty> ipwProp = vtkSmartPointer<vtkProperty>::New();
+	vtkSmartPointer<vtkStructuredPointsReader> reader = image.GetSegmentedImageReader();
+
+	int imageDims[3];
+	reader->GetOutput()->GetDimensions(imageDims);
+
+	cout << "Image dims: " << imageDims[0] << "," << imageDims[1] << "," << imageDims[2] << endl;
+
+	for (int i = 0; i < 3; i++)
+    {
+		image.planes[i] = vtkSmartPointer<vtkImagePlaneWidget>::New();
+		image.planes[i]->SetInteractor(renderWindowInteractor);
+		image.planes[i]->SetPicker(picker);
+		image.planes[i]->RestrictPlaneToVolumeOn();
+
+		// outline: Red, Green, Blue
+		double color[3] = {0, 0, 0};
+		color[i] = 1;
+		image.planes[i]->GetPlaneProperty()->SetColor(color);
+
+		image.planes[i]->SetTexturePlaneProperty(ipwProp);
+		image.planes[i]->TextureInterpolateOff();
+		image.planes[i]->SetResliceInterpolateToLinear();
+		image.planes[i]->SetInputConnection(reader->GetOutputPort());
+		image.planes[i]->SetPlaneOrientation(i);
+		image.planes[i]->SetSliceIndex(imageDims[i]/2);
+		image.planes[i]->DisplayTextOn();
+		image.planes[i]->SetDefaultRenderer(renderer);
+		image.planes[i]->SetWindowLevel(1358, -27);
+		image.planes[i]->Off();
+		image.planes[i]->InteractionOff();
+	}
+}
+
+/*
+ * Shows/hides available commands info
+ */
+void toggleMenu()
+{
+	if (menuInfoVisible) { // we will see list of commands
+		renderer->RemoveActor2D(menuInfo);
+		renderer->AddActor2D(menuCommands);
+	} else {
+		renderer->RemoveActor2D(menuCommands);
+		renderer->AddActor2D(menuInfo);
+	}
+	menuInfoVisible = !menuInfoVisible;
+	renderWindowInteractor->Render();
+}
+
+/*
+ * Shows/hides loading message, used for VTK files when the window freezes.
+ */
+void toggleLoading()
+{
+	if (loadingData) {
+		renderer->RemoveActor2D(menuLoading);
+	} else {
+		renderer->AddActor2D(menuLoading);
+	}
+	loadingData = !loadingData;
+	refreshWindow();
+}
+
+/*
+ * Shows/hides image planes (sagittal, transversal, coronal)
+ */
+void togglePlane(ImagePlane planeToShow)
+{
+	if (image.currentVessel != Segmented)
+		return;
+
+	cout << "Current Plane = " << image.currentPlane << endl;
+
+	for (int i = 0; i < 3; i++) {
+		if (planeToShow == i) {
+			if (image.currentPlane == planeToShow) { // the same key second time = hide
+				image.planes[i]->Off();
+				image.currentPlane = None;
+			} else { // show chosen plane
+				image.planes[i]->On();
+				image.currentPlane = planeToShow;
+			}
+		} else { // hide the rest of the planes
+			image.planes[i]->Off();
+		}
+	}
 }
 
 /*
@@ -270,8 +340,6 @@ void loadFile(VesselFile type)
 void refreshWindow()
 {
 	renderWindowInteractor->Render();
-	//renderer->Modified();
-	//renderWindow->Render();
 }
 
 /*
@@ -291,13 +359,16 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	if (image.currentVessel == Segmented)
 	{
 		if (key == "s") {
-			cout << "sagittal, do something" << endl;
+			togglePlane(Sagittal);
+			cout << "Sagittal" << endl;
 		}
 		if (key == "t") {
-			cout << "transversal, do something" << endl;
+			togglePlane(Transversal);
+			cout << "Transversal" << endl;
 		}
 		if (key == "c") {
-			cout << "coronal, do something" << endl;
+			togglePlane(Coronal);
+			cout << "Coronal" << endl;
 		}
 
 		if (key == "plus") {

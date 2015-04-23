@@ -25,6 +25,9 @@
 #include <vtkOutlineFilter.h>
 #include <vtkProperty.h>
 
+// Image planes
+#include <vtkImagePlaneWidget.h>
+
 // Ray cast
 #include <vtkVolumeProperty.h>
 #include <vtkColorTransferFunction.h>
@@ -41,12 +44,19 @@
 using namespace std;
 
 enum VesselFile {
-	None,
+	NotLoaded,
 	Data,
 	Segmented,
 	Skeleton,
 	RayCast,
 	Loading
+};
+
+enum ImagePlane {
+	Sagittal,
+	Transversal,
+	Coronal,
+	None,
 };
 
 class MyImage3D
@@ -60,11 +70,16 @@ class MyImage3D
 
 		vtkSmartPointer<vtkImageData> vtk_image_data;
 		VesselFile currentVessel;
+		ImagePlane currentPlane;
+
+		// Image planes
+		vtkSmartPointer<vtkImagePlaneWidget> planes[3];
 
 		MyImage3D()
 		{
 			vtk_image_data = vtkSmartPointer<vtkImageData>::New();
-			currentVessel = None;
+			currentVessel = NotLoaded;
+			currentPlane = None;
 		};
 
 		//If the image is empty return true (1), else return fail (0).
@@ -88,8 +103,9 @@ class MyImage3D
 		vtkSmartPointer<vtkVolume> GetRayCastingImage();
 		vtkSmartPointer<vtkActor> GetSegmentedImage();
 		vtkSmartPointer<vtkActor> GetSkeletonImage();
-
 		vtkSmartPointer<vtkActor> GetSegmentedOutline();
+
+		vtkSmartPointer<vtkStructuredPointsReader> GetSegmentedImageReader();
 };
 
 #endif
