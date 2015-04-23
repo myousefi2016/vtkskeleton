@@ -172,7 +172,7 @@ void prepareMenu()
 	menuCommands->GetTextProperty()->SetFontSize(14);
 	menuCommands->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
 	menuCommands->SetDisplayPosition(menuPositionX, menuPositionY);
-	menuCommands->SetInput("# Segmented image:\n[s] sagittal view\n[t] transversal view\n[c] coronal view\n[+/i] scroll through the slices\n[p/m] zoom in/out\n[z] reset zoom\n[e/q] exit\n[i] close commands info");
+	menuCommands->SetInput("# Segmented image:\n[s] sagittal view\n[t] transversal view\n[c] coronal view\n[+/-] scroll through the slices\n\n# Volume rendering:\n[+/-] rotate view\n\n[p/m] zoom in/out\n[z] reset zoom\n[e/q] exit\n[i] close commands info");
 	
 	menuVessels->GetTextProperty()->SetFontFamilyToCourier();
 	menuVessels->GetTextProperty()->SetFontSize(14);
@@ -389,6 +389,9 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 
 		if (key == "plus" || key == "minus")
 		{
+			if (image.currentPlane == None)
+				return;
+
 			int currentSlice = image.planes[image.currentPlane]->GetSliceIndex();
 
 			// vtkImagePlaneWidget takes care of too big/small dimensions
@@ -404,21 +407,23 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	if (image.currentVessel == RayCast)
 	{
 		if (key == "plus") {
-
+			renderer->GetActiveCamera()->Azimuth(5.0);
+			refreshWindow();
 		}
 		if (key == "minus") {
-
+			renderer->GetActiveCamera()->Azimuth(-5.0);
+			refreshWindow();
 		}
 	}
 
 	// Zoom in/out
 	if (key == "p") {
 		renderer->GetActiveCamera()->Zoom(1.25);
-		renderWindowInteractor->Render();
+		refreshWindow();
 	}
 	if (key == "m") {
 		renderer->GetActiveCamera()->Zoom(0.8);
-		renderWindowInteractor->Render();
+		refreshWindow();
 	}
 	if (key == "z") {
 		renderer->ResetCamera();
