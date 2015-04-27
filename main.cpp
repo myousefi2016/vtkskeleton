@@ -49,7 +49,7 @@ vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor;
 vtkSmartPointer<vtkImagePlaneWidget> planeWidget;
 
 vtkSmartPointer<vtkVolume> volume;
-vtkSmartPointer<vtkActor> actor, outlineActor;
+vtkSmartPointer<vtkActor> segmActor, skelActor, outlineActor;
 
 // Menu
 vtkSmartPointer<vtkTextActor> menuInfo, menuCommands, menuVessels, menuLoading;
@@ -179,7 +179,7 @@ void prepareMenu()
 	menuVessels->GetTextProperty()->SetFontSize(14);
 	menuVessels->GetTextProperty()->SetColor(0.0, 0.0, 1.0);
 	menuVessels->SetDisplayPosition(menuPositionX + 300, menuPositionY);
-	menuVessels->SetInput("[6] volume rendering [7] segmented image [8] skeleton image");
+	menuVessels->SetInput("[1] skeleton & segmented [6] volume rendering [7] segmented [8] skeleton");
 	renderer->AddActor(menuVessels);
 	
 	menuLoading->GetTextProperty()->SetFontFamilyToCourier();
@@ -204,7 +204,8 @@ void loadVessels(VesselFile type)
 	togglePlane(image.currentPlane);
 
 	// remove actors and/or volumes
-	renderer->RemoveActor(actor);
+	renderer->RemoveActor(segmActor);
+	renderer->RemoveActor(skelActor);
 	renderer->RemoveActor(outlineActor);
 	renderer->RemoveVolume(volume);
 
@@ -223,24 +224,48 @@ void loadFile(VesselFile type)
 	switch (type)
 	{
 		case RayCast:
-			volume = image.GetRayCastingImage();
 			renderWindow->SetWindowName("Skeleton Visualisation - Volume visualization (vessels_data.vtk)");
+
+			volume = image.GetRayCastingImage();
+
 			renderer->AddVolume(volume);
-			return; // not break, we don't want to add vtkActor, only vtkVolume
+			break; // not break, we don't want to add vtkActor, only vtkVolume
+
 		case Segmented:
-			actor = image.GetSegmentedImage();
+			renderWindow->SetWindowName("Skeleton Visualisation - Segmented image (vessels_seg.vtk)");
+
+			segmActor = image.GetSegmentedImage();
+			segmActor->GetProperty()->SetOpacity(1.0);
 			outlineActor = image.GetSegmentedOutline();
 			setupSegmentedImagePlanes();
+
+			// add actors to renderer
+			renderer->AddActor(segmActor);
 			renderer->AddActor(outlineActor);
-			renderWindow->SetWindowName("Skeleton Visualisation - Segmented image (vessels_seg.vtk)");
 			break;
+
 		case Skeleton:
-			actor = image.GetSkeletonImage();
 			renderWindow->SetWindowName("Skeleton Visualisation - Skeleton image (vessels_skel.vtk)");
+
+			skelActor = image.GetSkeletonImage();
+			
+			renderer->AddActor(skelActor);
+			break;
+
+		case SkeletonAndSegmented:
+			renderWindow->SetWindowName("Skeleton Visualisation - Skeleton and segmented image");
+			
+			segmActor = image.GetSegmentedImage();
+			skelActor = image.GetSkeletonImage();
+
+			segmActor->GetProperty()->SetOpacity(0.3);
+
+			renderer->AddActor(segmActor);
+			renderer->AddActor(skelActor);
+
 			break;
 	}
 
-	renderer->AddActor(actor);
 }
 
 /*
@@ -334,7 +359,7 @@ void togglePlane(ImagePlane planeToShow)
 				image.currentPlane = None;
 
 				// no planes = add Segmented image again
-				renderer->AddActor(actor);
+				renderer->AddActor(segmActor);
 			}
 			else
 			{ // show chosen plane
@@ -342,7 +367,7 @@ void togglePlane(ImagePlane planeToShow)
 				image.currentPlane = planeToShow;
 
 				// plane visible = remove Segmented image
-				renderer->RemoveActor(actor);
+				renderer->RemoveActor(segmActor);
 			}
 			refreshWindow();
 		}
@@ -429,6 +454,7 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	}
 
 	// Vessel files
+	if (key == "1") loadVessels(SkeletonAndSegmented);
 	if (key == "6") loadVessels(RayCast);
 	if (key == "7") loadVessels(Segmented);
 	if (key == "8") loadVessels(Skeleton);

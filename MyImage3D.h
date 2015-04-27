@@ -52,7 +52,8 @@ enum VesselFile {
 	NotLoaded,
 	RayCast,
 	Segmented,
-	Skeleton
+	Skeleton,
+	SkeletonAndSegmented
 };
 
 enum ImagePlane {
