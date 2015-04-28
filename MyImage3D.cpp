@@ -292,7 +292,7 @@ vtkSmartPointer<vtkActor> MyImage3D::GetSegmentedOutline()
 		return outlineActor;
 
 	vtkSmartPointer<vtkOutlineFilter> outlineFilter = vtkSmartPointer<vtkOutlineFilter>::New();
-	outlineFilter->SetInputData(segmMapper->GetInput());
+	outlineFilter->SetInputData(segmReader->GetOutput());
 
 	outlineMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 	outlineMapper->SetInputConnection(outlineFilter->GetOutputPort());
