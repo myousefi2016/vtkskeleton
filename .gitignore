@@ -10,3 +10,12 @@ share/*
 
 *.exe
 *.vtk
+
+# Latex files
+*.aux
+*.synctex.gz
+*.toc
+*.log
+*.pdf
+*.gz
+*.dvi
