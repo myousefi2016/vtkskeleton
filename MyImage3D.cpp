@@ -276,12 +276,12 @@ vtkSmartPointer<vtkActor> MyImage3D::GetSkeletonImage()
 	contourFilter->SetValue(0, 8.0f);
 	contourFilter->Update();
 
-	segmMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	segmMapper->SetInputConnection(contourFilter->GetOutputPort()); 
-	segmMapper->ScalarVisibilityOff();
+	skelMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	skelMapper->SetInputConnection(contourFilter->GetOutputPort()); 
+	skelMapper->ScalarVisibilityOff();
 	
 	skelActor = vtkSmartPointer<vtkActor>::New();
-	skelActor->SetMapper(segmMapper);
+	skelActor->SetMapper(skelMapper);
 
 	return skelActor;
 }
