@@ -35,7 +35,7 @@ void loadFile(VesselFile type);
 void setupSegmentedImagePlanes();
 
 // UI functions
-void toggleMenu();
+void toggleCommandsMenu();
 void toggleLoading();
 void togglePlane(ImagePlane planeToShow);
 void refreshWindow();
@@ -52,7 +52,7 @@ vtkSmartPointer<vtkVolume> volume;
 vtkSmartPointer<vtkActor> segmActor, skelActor, outlineActor;
 
 // Menu
-vtkSmartPointer<vtkTextActor> menuInfo, menuCommands, menuVessels, menuLoading;
+vtkSmartPointer<vtkTextActor> menuCommands, menuVessels, menuLoading;
 
 // Configuration
 const int windowSizeX = 1000;
@@ -61,6 +61,17 @@ const int windowSizeY = 700;
 // Flags
 bool menuInfoVisible = false;
 bool loadingData = false;
+
+// Menu commands
+int infoCurrentPage = 0;
+string infoCommands[] = {
+	"[i] see available commands",
+	"# Volume rendering:\n[+/-] rotate view\n\n[i] more commands",
+	"# Segmented image:\n[s] sagittal view\n[t] transversal view\n[c] coronal view\n[+/-] scroll through the slices\n\n[i] more commands",
+	"# Skeleton image:\n To complete\n\n[i] more commands",
+	"# Other:\n\n[z] reset zoom\n[e/q] exit\n[i] close commands info"
+};
+int infoCommandsSize = sizeof(infoCommands) / sizeof(infoCommands[0]);
 
 MyImage3D image;
 
@@ -127,7 +138,6 @@ void initVTK()
 
 	// Prepare menu
 	prepareMenu();
-	toggleMenu();
 
 	renderWindowInteractor->SetRenderWindow(renderWindow);
 	renderWindowInteractor->SetInteractorStyle(interactorStyle);
@@ -155,7 +165,6 @@ void setLOD(int lod)
  */
 void prepareMenu()
 {
-	menuInfo = vtkSmartPointer<vtkTextActor>::New();
 	menuCommands = vtkSmartPointer<vtkTextActor>::New();
 	menuVessels = vtkSmartPointer<vtkTextActor>::New();
 	menuLoading = vtkSmartPointer<vtkTextActor>::New();
@@ -163,17 +172,12 @@ void prepareMenu()
 	int menuPositionX = 10;
 	int menuPositionY = 10; // padding from bottom
 	
-	menuInfo->GetTextProperty()->SetFontFamilyToCourier();
-	menuInfo->GetTextProperty()->SetFontSize(14);
-	menuInfo->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
-	menuInfo->SetDisplayPosition(menuPositionX, menuPositionY);
-	menuInfo->SetInput("[i] see available commands");
-	
 	menuCommands->GetTextProperty()->SetFontFamilyToCourier();
 	menuCommands->GetTextProperty()->SetFontSize(14);
 	menuCommands->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
 	menuCommands->SetDisplayPosition(menuPositionX, menuPositionY);
-	menuCommands->SetInput("# Segmented image:\n[s] sagittal view\n[t] transversal view\n[c] coronal view\n[+/-] scroll through the slices\n\n# Volume rendering:\n[+/-] rotate view\n\n[p/m] zoom in/out\n[z] reset zoom\n[e/q] exit\n[i] close commands info");
+	menuCommands->SetInput(infoCommands[infoCurrentPage].c_str());
+	renderer->AddActor(menuCommands);
 	
 	menuVessels->GetTextProperty()->SetFontFamilyToCourier();
 	menuVessels->GetTextProperty()->SetFontSize(14);
@@ -307,22 +311,15 @@ void setupSegmentedImagePlanes()
 }
 
 /*
- * Shows/hides available commands info
+ * Commands info
  */
-void toggleMenu()
+void toggleCommandsMenu()
 {
-	if (menuInfoVisible)
-	{ // we will see list of commands
-		renderer->RemoveActor2D(menuInfo);
-		renderer->AddActor2D(menuCommands);
-	}
-	else
-	{
-		renderer->RemoveActor2D(menuCommands);
-		renderer->AddActor2D(menuInfo);
-	}
+	int infoNextPage = (infoCurrentPage + 1) % infoCommandsSize;
 
-	menuInfoVisible = !menuInfoVisible;
+	menuCommands->SetInput(infoCommands[infoNextPage].c_str());
+
+	infoCurrentPage = infoNextPage;
 	renderWindowInteractor->Render();
 }
 
@@ -396,7 +393,7 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	string key = iren->GetKeySym();
 
 	if (key == "i") {
-		toggleMenu();
+		toggleCommandsMenu();
 	}
 
 	// Segmented image
