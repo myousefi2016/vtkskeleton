@@ -1,5 +1,5 @@
 \chapter{Results}
-The following structure corresponds to the structed in the project instruction.
+The following structure corresponds to project instruction.
 
 % Example: insert image
 % \includegraphics{fig/NameOfTheFileWithoutExtension}
@@ -32,26 +32,59 @@ The following structure corresponds to the structed in the project instruction.
 \textbf{4} Dataset structure describing the geometry and topology of the dataset. Available structures: STRUCTURED\_POINTS, STRUCTURED\_GRID, UNSTRUCTURED\_GRID, POLYDATA, RECTILINEAR\_GRID, FIELD.\\
 \textbf{5} Dataset attributes, number of data items = number of points in the dataset; dimension x*y*z = POINT\_DATA
 
-The data in the given files is compressed by means of storing a single grayscale value for each point. Apart from this, no futher compression to file is used.
+The data in the given files is compressed by means of storing a single grayscale value for each point. Apart from this, no futher compression to file is applied.
 
 \subsection{Menu}
 The application provides a simple menu at the bottom of the window.
 
-\includegraphics[scale=0.4]{fig/menu}
+\includegraphics[scale=0.3]{fig/menu}
 
 \section{Planes for different views}
 
 \begin{figure}
 	\centering
-	\includegraphics[scale=0.5]{fig/image-plane}
+	\includegraphics[scale=0.4]{fig/image-plane}
 	\caption{Coronal view for segmented image.}
 	\label{fig:image-plane}
 \end{figure}
 
-A class vtkImagePlaneWidget was used to show the cut from the segmented data (Figure \ref{fig:image-plane}). In segmented image view we can show sagittal, transversal and coronal views by pressing keys S, T and C respectively. The segmented image is then hidden in order to show a cut and scrolling through the slices is possible by pressing + and - keys.
+A class vtkImagePlaneWidget was used to show the cut from the segmented data (Figure \ref{fig:image-plane}). In segmented image view we can show sagittal, transversal and coronal views by pressing S, T and C keys respectively. The segmented image is then hidden in order to show a cut and scrolling through the slices is possible by pressing + and - keys.
 
 \section{Marching cubes and building the skeleton}
 
+\begin{figure}
+	\centering
+	\includegraphics[scale=0.6]{fig/segmented-skeleton}
+	\caption{vtkContourFilter used to render segmented and skeleton images.}
+	\label{fig:segmented-skeleton}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[scale=0.6]{fig/marching-cubes-1-point}
+	\caption{Only one voxel with non-zero value (all other voxels are set to 0.)}
+	\label{fig:marching-cubes-1-point}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[scale=0.6]{fig/marching-cubes-2-points}
+	\caption{Two voxels with non-zero value (all other voxels are set to 0.)}
+	\label{fig:marching-cubes-2-points}
+\end{figure}
+
+\begin{lstlisting}[caption={A sample from skeleton file},label={lst:sample-skeleton}]	 % label doesn't work :/
+0 0 0 0 0 0 0 0 0 
+0 0 0 0 0 0 14 0 0 
+0 0 0 0 0 0 0 0 0 
+\end{lstlisting}
+
+A class vtkContourFilter was used to render segmented and skeleton images as they are in provided files (Figure \ref{fig:segmented-skeleton}).
+The visualized skeleton path is not continuous due to provided data that was processed by vtkContourFilter. The values occur alone, the adjacent ones have value zero (Listing 1.1). If this situation occurs, there is a small cube mesh built around this voxel (Figure \ref{fig:marching-cubes-1-point}). Similar case is with two voxels with non-zero value (Figure \ref{fig:marching-cubes-2-points}).
+
+TODO : -	Build the skeleton using the vtkTubeFilter (single tube should be used for a single branch. A branch in the skeleton image consists of neighboring voxels that have 2 neighbors (they are part of the path), and start and end voxel (they have either 1 or mode than 2 neighbors in their 3D neighborhood). In order to make a tube, the voxels have to be entered in a SEQUENTIAL order from one (start) voxel to the other (end) voxel).\\
+-	How does the skeleton look like? Are the branches smooth? Why?\\
+-	Make the branches smooth.\\
 
 \section{Volume visualization}
 

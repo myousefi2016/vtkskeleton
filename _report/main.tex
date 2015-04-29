@@ -16,6 +16,14 @@
 \usepackage{fancyhdr}
 \usepackage{graphicx}
 % \usepackage[colorlinks]{hyperref}
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\usepackage{caption}
+\DeclareCaptionFont{white}{\color{white}}
+\DeclareCaptionFormat{listing}{\colorbox{gray}{\parbox{\textwidth}{#1#2#3}}}
+\captionsetup[lstlisting]{format=listing,labelfont=white,textfont=white}
 
 %\pagestyle{fancy}
 \titleformat{\chapter}{}{}{0em}{\bf\LARGE}
@@ -27,9 +35,9 @@
 \newcommand{\headerfmtpage}[1]{\textsf{#1}}
 
 \fancyhf{}
-\fancyhead[LE,RO]{\headerfmtpage{\thepage}}
+\fancyhead[L,RO]{\headerfmtpage{\thepage}}
 \fancyhead[LO]{\headerfmt{\rightmark}}
-\fancyhead[RE]{\headerfmt{\leftmark}}
+\fancyhead[R]{\headerfmt{\leftmark}}
 \renewcommand{\headrulewidth}{0.5pt}
 \renewcommand{\footrulewidth}{0pt}
 
