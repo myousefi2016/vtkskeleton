@@ -15,7 +15,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkImageData.h>
 #include <string>
- #include <stack>
+#include <stack>
 #include <vector>
 
 // VTK files
@@ -47,8 +47,9 @@
 
 #include <vtkTubeFilter.h>
 #include <vtkStructuredPoints.h>
-#include <vtkInformation.h>
-
+#include <vtkPoints.h>
+#include <vtkCellArray.h>
+#include <vtkPolyLine.h>
 using namespace std;
 
 typedef unsigned short ushort;
@@ -58,7 +59,8 @@ enum VesselFile {
 	RayCast,
 	Segmented,
 	Skeleton,
-	SkeletonAndSegmented
+	SkeletonAndSegmented,
+	TubedSkeleton,
 };
 
 enum ImagePlane {
@@ -73,7 +75,7 @@ class MyImage3D
 	vtkSmartPointer<vtkStructuredPointsReader> dataReader, segmReader, skelReader;
 	vtkSmartPointer<vtkStructuredPoints> structuredPoints;
 	vtkSmartPointer<vtkPolyDataMapper> dataMapper, segmMapper, skelMapper, outlineMapper;
-	vtkSmartPointer<vtkActor> dataActor = NULL, segmActor = NULL, skelActor = NULL, outlineActor = NULL;
+	vtkSmartPointer<vtkActor> dataActor = NULL, segmActor = NULL, skelActor = NULL, outlineActor = NULL, tubedSkeletonActor = NULL;
 	vtkSmartPointer<vtkVolume> raycastVolume = NULL;
 
 	public:
@@ -119,18 +121,15 @@ class MyImage3D
 		vtkSmartPointer<vtkActor> GetSegmentedImage();
 		vtkSmartPointer<vtkActor> GetSkeletonImage();
 		vtkSmartPointer<vtkActor> GetSegmentedOutline();
+		vtkSmartPointer<vtkActor> GetTubedSkeleton();
 
 		vtkSmartPointer<vtkStructuredPointsReader> GetSegmentedImageReader();
 
-		void PointC(); // Work in progress..
-
 	private:
-		// Help functions for the public function PointC
+		// Help functions for the public function GetTubedSkeleton()
 		bool isVisited(ushort x, ushort y, ushort z);
 		bool isVisited(vector<ushort> * voxel);
-		bool isVisited(ushort * voxel);
 		void setVisited(ushort x, ushort y, ushort z);
-		void setVisited(ushort * voxel);
 		void setVisited(vector<ushort> * voxel);
 		vector<ushort> makeVector(ushort a, ushort b, ushort c);
 		bool copyVoxelValues(vector<ushort> * from, vector<ushort> * to);
@@ -140,6 +139,7 @@ class MyImage3D
 		void findEndOfBranch(vector<ushort> * currentVoxel, vector<ushort> * endOfBranch);
 		bool findNextVoxel(vector<ushort> * vox);
 		void getBranch(vector<ushort> * currentVoxel, vector<vector<ushort> > * branch);
+		vtkSmartPointer<vtkTubeFilter> makeTube(vector<vector<vector<ushort> > >* branches);
 };
 
 #endif

@@ -49,7 +49,7 @@ vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor;
 vtkSmartPointer<vtkImagePlaneWidget> planeWidget;
 
 vtkSmartPointer<vtkVolume> volume;
-vtkSmartPointer<vtkActor> segmActor, skelActor, outlineActor;
+vtkSmartPointer<vtkActor> segmActor, skelActor, outlineActor, tubedSkeletonActor;
 
 // Menu
 vtkSmartPointer<vtkTextActor> menuCommands, menuVessels, menuLoading;
@@ -77,7 +77,6 @@ MyImage3D image;
 
 int main(int, char *[])
 {
-	image.PointC(); // Testing the voxel traversal function
 	initVTK();
 
 	// Example of creating a new 3-D image and initializing it with 0:
@@ -110,8 +109,8 @@ int main(int, char *[])
 	}*/
 	
 	// The first one to load
-	loadFile(Segmented);
-	//loadFile(RayCast);
+	//loadFile(Segmented);
+	loadFile(TubedSkeleton);
 
 	renderVTK();
 
@@ -209,6 +208,7 @@ void loadVessels(VesselFile type)
 
 	// remove actors and/or volumes
 	renderer->RemoveActor(segmActor);
+	renderer->RemoveActor(tubedSkeletonActor);
 	renderer->RemoveActor(skelActor);
 	renderer->RemoveActor(outlineActor);
 	renderer->RemoveVolume(volume);
@@ -267,6 +267,12 @@ void loadFile(VesselFile type)
 			renderer->AddActor(segmActor);
 			renderer->AddActor(skelActor);
 
+			break;
+
+		case TubedSkeleton: 
+			renderWindow->SetWindowName("Work in progress.. skeleton image with a tube");
+			tubedSkeletonActor = image.GetTubedSkeleton();
+			renderer->AddActor(tubedSkeletonActor);
 			break;
 	}
 
