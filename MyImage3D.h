@@ -15,6 +15,8 @@
 #include <vtkSmartPointer.h>
 #include <vtkImageData.h>
 #include <string>
+ #include <stack>
+#include <vector>
 
 // VTK files
 #include <vtkPolyDataMapper.h>
@@ -48,6 +50,8 @@
 
 using namespace std;
 
+typedef unsigned short ushort;
+
 enum VesselFile {
 	NotLoaded,
 	RayCast,
@@ -77,6 +81,9 @@ class MyImage3D
 		VesselFile currentVessel;
 		ImagePlane currentPlane;
 
+		stack<vector<ushort> > voxelsToVisit;
+		vector<bool> visited;
+
 		// Image planes
 		vtkSmartPointer<vtkImagePlaneWidget> planes[3];
 		int dimensions[3];
@@ -96,16 +103,12 @@ class MyImage3D
 		
 		// Return the voxel value at index: _slices, _rows, _columns. Note that in (real) world coordinates
 		// the slice index corresponds to Z axis, rows to Y axis and columns to X axis.
-		unsigned short& Index(unsigned int _slices, unsigned int _rows, unsigned int _columns); 
+		ushort& Index(unsigned int _slices, unsigned int _rows, unsigned int _columns); 
 
 		// Fill in the image with the given value
-		void FillInWith(unsigned short _value);
+		void FillInWith(ushort _value);
 
-		void PointC();
-		// 2 help functions to PointC
-		void FindFirstUsedVoxel(int * vox1); 
-		void FindVoxelNeighbors(int * currentVoxel, int * parentVoxel);
-		
+
 
 		// Create an actor to control the level of detail in rendering
 		vtkSmartPointer<vtkLODActor> SetLOD();
@@ -117,6 +120,23 @@ class MyImage3D
 		vtkSmartPointer<vtkActor> GetSegmentedOutline();
 
 		vtkSmartPointer<vtkStructuredPointsReader> GetSegmentedImageReader();
+
+		void PointC(); // Work in progress..
+
+	private:
+		// Help functions for the public function PointC
+		bool isVisited(ushort x, ushort y, ushort z);
+		bool isVisited(vector<ushort> * voxel);
+		bool isVisited(ushort * voxel);
+		void setVisited(ushort x, ushort y, ushort z);
+		void setVisited(ushort * voxel);
+		void setVisited(vector<ushort> * voxel);
+		vector<ushort> makeVector(ushort a, ushort b, ushort c);
+
+		void findVoxelNeighbors(ushort * currentVoxel, vector<vector<ushort> > * neighbors);
+		void findEndOfBranch(ushort * endOfBranch, ushort * currentVoxel);
+		bool findNextVoxel(ushort * vox);
+		void getBranch(vector<vector<ushort> > * branch, ushort * currentVoxel);
 };
 
 #endif
