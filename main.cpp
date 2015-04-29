@@ -77,7 +77,7 @@ MyImage3D image;
 
 int main(int, char *[])
 {
-	//image.PointC(); // Testing the voxel traversal function
+	image.PointC(); // Testing the voxel traversal function
 	initVTK();
 
 	// Example of creating a new 3-D image and initializing it with 0:

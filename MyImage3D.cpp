@@ -67,6 +67,14 @@ void MyImage3D::FillInWith(ushort _value)
 	}
 }
 
+bool MyImage3D::copyVoxelValues(vector<ushort> * from, vector<ushort> * to)
+{
+	if(from->size() != 3) return false;
+	to->clear();
+	to->push_back(from->at(0)); to->push_back(from->at(1)); to->push_back(from->at(2));
+	return true;
+}
+
 vector<ushort> MyImage3D::makeVector(ushort a, ushort b, ushort c)
 {
 	vector<ushort> v;
@@ -106,10 +114,10 @@ void MyImage3D::setVisited(vector<ushort> * voxel)
  * Parameters: the addresses of the neighboring voxels of 'currentVoxel' is
  *             put in vector 'neighbors'.
  */
-void MyImage3D::findVoxelNeighbors(ushort * currentVoxel, vector<vector<ushort> > * neighbors)
+void MyImage3D::findVoxelNeighbors(vector<ushort> * currentVoxel, vector<vector<ushort> > * neighbors)
 {
 	ushort a, b, c;
-	a = currentVoxel[0]; b = currentVoxel[1]; c = currentVoxel[2];
+	a = currentVoxel->at(0); b = currentVoxel->at(1); c = currentVoxel->at(2);
 	ushort* neighborVoxelScalar;
 	short int x,y,z;
 
@@ -136,9 +144,9 @@ void MyImage3D::findVoxelNeighbors(ushort * currentVoxel, vector<vector<ushort> 
  * Parameters: when this function returns, the end voxel of the branch containing 'currentVoxel'
  *             is in 'endOfBranch'.
  */
-void MyImage3D::findEndOfBranch(ushort * endOfBranch, ushort * currentVoxel)
+void MyImage3D::findEndOfBranch(vector<ushort> * currentVoxel, vector<ushort> * endOfBranch)
 {
-	ushort parentVoxel[3];
+	vector<ushort> parentVoxel = makeVector(dimensions[0]+1, dimensions[1]+1, dimensions[2]+1);
 	while(true)
 	{
 		vector<vector<ushort> > voxelNeighbors;
@@ -146,16 +154,18 @@ void MyImage3D::findEndOfBranch(ushort * endOfBranch, ushort * currentVoxel)
 
 		if(voxelNeighbors.size() == 1) 
 		{
-			endOfBranch[0] = currentVoxel[0]; endOfBranch[1] = currentVoxel[1]; endOfBranch[2] = currentVoxel[2];
+			copyVoxelValues(currentVoxel, endOfBranch);
 			return;
 		}
 
 		for(vector<ushort> neighbor : voxelNeighbors)
 		{
-			if((neighbor.at(0) == parentVoxel[0] && neighbor.at(1) == parentVoxel[1] && neighbor.at(2) == parentVoxel[2]) == false)
+			if((neighbor.at(0) == parentVoxel.at(0) && 
+				neighbor.at(1) == parentVoxel.at(1) && 
+				neighbor.at(2) == parentVoxel.at(2)) == false)
 			{
-				parentVoxel[0] = currentVoxel[0]; parentVoxel[1] = currentVoxel[1]; parentVoxel[2] = currentVoxel[2];
-				currentVoxel[0] = neighbor.at(0); currentVoxel[1] = neighbor.at(1); currentVoxel[2] = neighbor.at(2);
+				copyVoxelValues(currentVoxel, &parentVoxel);
+				copyVoxelValues(&neighbor, currentVoxel);
 			}
 		}
 	}
@@ -166,16 +176,16 @@ void MyImage3D::findEndOfBranch(ushort * endOfBranch, ushort * currentVoxel)
  *             is only changed in this function.
  * Returns: FALSE when the search is at the last voxel of the image, TRUE otherwise.
  */ 
-bool MyImage3D::findNextVoxel(ushort * vox)
+bool MyImage3D::findNextVoxel(vector<ushort> * vox)
 {
 	ushort * voxelScalarValue;
 	ushort x, y, z;
 
-	for(x = vox[0]; x < dimensions[0]; x++)
+	for(x = vox->at(0); x < dimensions[0]; x++)
 	{
-		for(y = vox[1]; y < dimensions[1]; y++)
+		for(y = vox->at(1); y < dimensions[1]; y++)
 		{
-			for(z = vox[2]; z < dimensions[2]; z++)
+			for(z = vox->at(2); z < dimensions[2]; z++)
 			{
 				if(isVisited(x, y, z) == false)
 				{
@@ -183,7 +193,7 @@ bool MyImage3D::findNextVoxel(ushort * vox)
 					if(voxelScalarValue[0] != 0)
 					{
 						//cout << "Found in func findNextVoxel: " << x << ", " << y << ", " << z << endl;
-						vox[0] = x; vox[1] = y; vox[2] = z;
+						(*vox) = makeVector(x, y, z);
 						return true;
 					}
 					else { setVisited(x, y, z); }
@@ -198,12 +208,12 @@ bool MyImage3D::findNextVoxel(ushort * vox)
  * Parameters: The complete branch is in vector 'branch' when the function returns
  *             'currentVoxel' must be a voxel at the end of a branch to start with.
  */
-void MyImage3D::getBranch(vector<vector<ushort> > * branch, ushort * currentVoxel)
+void MyImage3D::getBranch(vector<ushort> * currentVoxel, vector<vector<ushort> > * branch)
 {
 	while(true)
 	{
-		branch->push_back(makeVector(currentVoxel[0], currentVoxel[1], currentVoxel[2])); // Building branch
-		setVisited(currentVoxel[0], currentVoxel[1], currentVoxel[2]);
+		setVisited(currentVoxel);
+		branch->push_back((*currentVoxel)); // Building branch
 
 		vector<vector<ushort> > neighbors;
 		findVoxelNeighbors(currentVoxel, &neighbors);
@@ -216,9 +226,7 @@ void MyImage3D::getBranch(vector<vector<ushort> > * branch, ushort * currentVoxe
 			vector<ushort> neighbor = neighbors.at(0);
 			if(isVisited(&neighbor) == false)
 			{
-				branch->push_back(neighbor);
-				currentVoxel[0] = neighbor[0]; currentVoxel[1] = neighbor[1]; currentVoxel[2] = neighbor[2];
-				setVisited(&neighbor);
+				copyVoxelValues(&neighbor, currentVoxel);
 			}
 
 			else { return; } // Only neighbor already visited == At the end of branch
@@ -230,9 +238,7 @@ void MyImage3D::getBranch(vector<vector<ushort> > * branch, ushort * currentVoxe
 			if(isVisited(&neighbor) == true) 
 				{ neighbor = neighbors.at(1); }
 
-			branch->push_back(neighbor);
-			currentVoxel[0] = neighbor[0]; currentVoxel[1] = neighbor[1]; currentVoxel[2] = neighbor[2];
-			setVisited(&neighbor);
+			copyVoxelValues(&neighbor, currentVoxel);	
 		}
 
 		else if(neighborCount > 2) // This branch has met the ends of other branches == End of this branch
@@ -249,6 +255,19 @@ void MyImage3D::getBranch(vector<vector<ushort> > * branch, ushort * currentVoxe
 	}	
 }
 
+// TODO: for testing. Just remove this function when done...
+void MyImage3D::testPrintingBranch(vector<vector<ushort> >* branch)
+{
+	vector<ushort> voxel;
+	cout << "Branch: " << endl;
+	for(int i = 0; i < branch->size(); i++)
+		{
+			voxel = branch->at(i);
+			cout << "	" << i << ": " << voxel.at(0) << ", " << voxel.at(1) << ", " << voxel.at(2) << endl;
+		}
+		cout << endl;
+}
+
 // TODO work in progress... Name of function is preliminary.
 // should take a look here for tubefilter info: http://public.kitware.com/pipermail/vtkusers/2003-October/020423.html
 void MyImage3D::PointC()
@@ -262,69 +281,67 @@ void MyImage3D::PointC()
 
 	while(!voxelsToVisit.empty()) { voxelsToVisit.pop(); }
 	structuredPoints->GetDimensions(dimensions);
-	 // TODO find other solution
 
 	visited.clear();
-	int imageSize = dimensions[0]*dimensions[1]*dimensions[2];
+	unsigned int imageSize = dimensions[0]*dimensions[1]*dimensions[2];
 	for(int i = 0; i < imageSize; i++) visited.push_back(0);
 
 	//cout << "Dimensions: " << dimensions[0] << " x " << dimensions[1] << " x " << dimensions[2] << endl;
 	//cout << "Visited size: " << visited.size() << endl;
 
-	ushort nextVoxel[3] = {0, 0, 0};
-	ushort endOfBranch[3];
-	ushort voxel[3];
+	vector<ushort> nextVoxel = makeVector(0, 0, 0);
+	vector<ushort> endOfBranch;
+	vector<ushort> voxel;
 
 	vtkSmartPointer<vtkTubeFilter> tubeFilter = vtkSmartPointer<vtkTubeFilter>::New();
 
-
-
-	// testing...
-	//findNextVoxel(nextVoxel);
-	//cout << "pointC: Next voxel found: " << nextVoxel[0] << ", " << nextVoxel[1] << ", " << nextVoxel[2] << endl;
-
-	/*vector<int*> neighbors;
-	voxel[0] = nextVoxel[0]; voxel[1] = nextVoxel[1]; voxel[2] = nextVoxel[2];
-	findVoxelNeighbors(voxel, &neighbors);
-
-	
-	cout << "#Neighbors: " << neighbors.size() << endl;
-	
-	findEndOfBranch(endOfBranch, voxel);
-
-	cout << "End of branch: " << endOfBranch[0] << ", " << endOfBranch[1] << ", " << endOfBranch[2] << endl;
-
-	for(int* neighbor : neighbors) { cout << "for-loop: " << neighbor[0] << ", " << neighbor[1] << ", " << neighbor[2] << endl; }
-	cout << "for-loop2: " << neighbors.at(0)[0] << ", " << neighbors.at(0)[1]  << ", " << neighbors.at(0)[2]  << endl;
-	for(int i = 0; i< neighbors.size(); i++) { cout << "for-loop3: " << neighbors.at(i)[0] << ", " << neighbors.at(i)[1]  << ", " << neighbors.at(i)[2]  << endl; }
-
-	/////////////
-
 	//---------------------------------------//
+
+	// Testing...
+	/*findNextVoxel(&nextVoxel);
+	copyVoxelValues(&nextVoxel, &voxel);
+	cout<< "nextVoxel: " << voxel.at(0) << ", " << voxel.at(1) << ", " << voxel.at(2) << endl;
 	
-	/*while(true)
+	vector<vector<ushort> > neighbors;
+	findVoxelNeighbors(&voxel, &neighbors);
+	for(vector<ushort> n : neighbors) { cout << "Neighbors: " << n.at(0) << ", " << n.at(1) << ", " << n.at(2) << endl; }
+	
+	findEndOfBranch(&voxel, &endOfBranch);
+	cout<< "endOfBranch: " << endOfBranch.at(0) << ", " << endOfBranch.at(1) << ", " << endOfBranch.at(2) << endl;
+	vector<vector<ushort> > branch;
+	
+	getBranch(&endOfBranch, &branch);
+	testPrintingBranch(&branch);*/
+	
+	while(true)
 	{
 		if(voxelsToVisit.empty() == false)
 		{
-			endOfBranch[0] = voxelsToVisit.top();
+			endOfBranch = voxelsToVisit.top();
 			voxelsToVisit.pop();
 		}
 		
-		else if(findNextVoxel(nextVoxel, &visited) == true) 
+		else if(findNextVoxel(&nextVoxel) == true) 
 		{ 
-			// Important: ONLY change 'nextVoxel' in 'findNextVoxel'!
-			voxel[0] = nextVoxel[0];voxel[1] = nextVoxel[1]; voxel[2] = nextVoxel[2];
-			findEndOfBranch(endOfBranch, voxel);
+			// Important: ONLY change 'nextVoxel' in function 'findNextVoxel'!
+			copyVoxelValues(&nextVoxel, &voxel);
+			findEndOfBranch(&voxel, &endOfBranch);
 			 
 		} 
 
 		else { break; } // If break == End of image
 
-		vector<int*> branch;
-		getBranch(&branch, endOfBranch, &visited);
+		vector<vector<ushort> > branch;
+		getBranch(&endOfBranch, &branch);
+
+		testPrintingBranch(&branch);
 
 		// TODO next I have to make some kind of line source out of every branch... and put it onto the filter.
-	}*/
+	}
+
+	//structuredPoints->GetPoint(ID+1, p);
+	//std::cout << "Scalar type: " << structuredPoints->GetScalarTypeAsString() << std::endl;
+	//std::cout << "#Scalar components: " << structuredPoints->GetNumberOfScalarComponents() << std::endl;
 }
 
 
@@ -460,24 +477,3 @@ vtkSmartPointer<vtkStructuredPointsReader> MyImage3D::GetSegmentedImageReader()
 {
 	return segmReader;
 }
-
-
-
-/*double p[3];
-	structuredPoints->GetOrigin(p);
-	std::cout << "Origin point (x,y,z)->(" << p[0] << "," << p[1] << "," << p[2] << ")" << std::endl; // Works
-	int ID = structuredPoints->FindPoint(p);
-	std::cout << "Origin ID : " << ID << std::endl;*/
-
-	//vtkSmartPointer<vtkInformation> info = vtkSmartPointer<vtkInformation>::New();
-	//structuredPoints->GetScalarType(info);
-	
-	//std::cout << "Scalar type: " << structuredPoints->GetScalarTypeAsString() << std::endl;
-	//std::cout << "#Scalar components: " << structuredPoints->GetNumberOfScalarComponents() << std::endl;
-	
-	//structuredPoints->GetPoint(ID+1, p);
-	//std::cout << "Next point (x,y,z)->(" << p[0] << "," << p[1] << "," << p[2] << ")" << std::endl; // Works
-
-	//int dims[3];
-	//structuredPoints->GetDimensions(dims);
-	//std::cout << "Dimensions (x,y,z)->(" << dims[0] << "," << dims[1] << "," << dims[2] << ")" << std::endl; // Works

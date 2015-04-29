@@ -132,11 +132,13 @@ class MyImage3D
 		void setVisited(ushort * voxel);
 		void setVisited(vector<ushort> * voxel);
 		vector<ushort> makeVector(ushort a, ushort b, ushort c);
+		bool copyVoxelValues(vector<ushort> * from, vector<ushort> * to);
+		void testPrintingBranch(vector<vector<ushort> >* branch);
 
-		void findVoxelNeighbors(ushort * currentVoxel, vector<vector<ushort> > * neighbors);
-		void findEndOfBranch(ushort * endOfBranch, ushort * currentVoxel);
-		bool findNextVoxel(ushort * vox);
-		void getBranch(vector<vector<ushort> > * branch, ushort * currentVoxel);
+		void findVoxelNeighbors(vector<ushort> * currentVoxel, vector<vector<ushort> > * neighbors);
+		void findEndOfBranch(vector<ushort> * currentVoxel, vector<ushort> * endOfBranch);
+		bool findNextVoxel(vector<ushort> * vox);
+		void getBranch(vector<ushort> * currentVoxel, vector<vector<ushort> > * branch);
 };
 
 #endif
