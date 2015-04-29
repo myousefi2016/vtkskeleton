@@ -43,7 +43,7 @@ The application provides a simple menu at the bottom of the window.
 
 \begin{figure}
 	\centering
-	\includegraphics[scale=0.4]{fig/image-plane}
+	\includegraphics[scale=0.3]{fig/image-plane}
 	\caption{Coronal view for segmented image.}
 	\label{fig:image-plane}
 \end{figure}
@@ -73,7 +73,8 @@ A class vtkImagePlaneWidget was used to show the cut from the segmented data (Fi
 	\label{fig:marching-cubes-2-points}
 \end{figure}
 
-\begin{lstlisting}[caption={A sample from skeleton file},label={lst:sample-skeleton}]	 % label doesn't work :/
+% label doesn't work :/
+\begin{lstlisting}[caption={A sample from skeleton file},label={lst:sample-skeleton}]
 0 0 0 0 0 0 0 0 0 
 0 0 0 0 0 0 14 0 0 
 0 0 0 0 0 0 0 0 0 
@@ -88,6 +89,16 @@ TODO : -	Build the skeleton using the vtkTubeFilter (single tube should be used 
 
 \section{Volume visualization}
 
+\begin{figure}
+	\centering
+	\includegraphics[scale=0.4]{fig/volume-rendering}
+	\caption{Volume rendering.}
+	\label{fig:volume-rendering}
+\end{figure}
+
+The volume visualization was obtained by using vtkVolumeRayCastMapper with vessels\_data.vtk (Figure \ref{fig:volume-rendering}). The crucial part was to set proper RGB points in vtkColorTransferFunction which correspond to luminance values from the VTK file.
+
+Because rendering requires complex computation, the image is blurred while rotating and it regains the focus when rotation stops.
 
 \section{Point picker and distance calculation}
 
