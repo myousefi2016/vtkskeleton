@@ -341,7 +341,7 @@ vtkSmartPointer<vtkLODActor> MyImage3D::SetLOD()
 	return lodActor;
 }
 
-// Ref: https://github.com/Kitware/VTK/tree/Examples/Cxx/Visualization/RenderPassExistingContext
+// Ref: https://github.com/Kitware/VTK/blob/master/Examples/Medical/Cxx/Medical4.cxx
 vtkSmartPointer<vtkVolume> MyImage3D::GetRayCastingImage()
 {
 	if (raycastVolume != NULL)
@@ -356,28 +356,42 @@ vtkSmartPointer<vtkVolume> MyImage3D::GetRayCastingImage()
 	vtkSmartPointer<vtkVolumeRayCastMapper> rayCastMapper = vtkSmartPointer<vtkVolumeRayCastMapper>::New();
 	rayCastMapper->SetInputConnection(dataReader->GetOutputPort());
 
-	// I may try these other two functions later...
-	//vtkSmartPointer<vtkVolumeRayCastIsosurfaceFunction> rcIsosurfaceFun = vtkSmartPointer<vtkVolumeRayCastIsosurfaceFunction>::New();
-	//vtkSmartPointer<vtkVolumeRayCastCompositeFunction> rcCompositeFun = vtkSmartPointer<vtkVolumeRayCastCompositeFunction>::New();
 	vtkSmartPointer<vtkVolumeRayCastMIPFunction> rcMipFun = vtkSmartPointer<vtkVolumeRayCastMIPFunction>::New();
 
 	rayCastMapper->SetVolumeRayCastFunction(rcMipFun);
 
-	raycastVolume = vtkSmartPointer<vtkVolume>::New();
-	raycastVolume->SetMapper(rayCastMapper);
-	
+	// The gradient opacity function is used to decrease the opacity
+	// in the "flat" regions of the volume while maintaining the opacity
+	// at the boundaries between tissue types.  The gradient is measured
+	// as the amount by which the intensity changes over unit distance.
+	// For most medical data, the unit distance is 1mm.
+	vtkSmartPointer<vtkPiecewiseFunction> volumeGradientOpacity = vtkSmartPointer<vtkPiecewiseFunction>::New();
+	volumeGradientOpacity->AddPoint(0,   0.0);
+	volumeGradientOpacity->AddPoint(90,  0.5);
+	volumeGradientOpacity->AddPoint(100, 1.0);
+
 	vtkSmartPointer<vtkColorTransferFunction> volumeColor = vtkSmartPointer<vtkColorTransferFunction>::New();
-	volumeColor->AddRGBPoint(0,   0.0, 1.0, 0.0);
-	volumeColor->AddRGBPoint(10, 1.0, 1.0, 1.0); // the biggest group of points = white
-	volumeColor->AddRGBPoint(20, 1.0, 1.0, 1.0); // the biggest group of points = white
-	volumeColor->AddRGBPoint(25, 1.0, 1.0, 1.0); // the biggest group of points = white
+	volumeColor->AddRGBPoint(10, 1.0, 1.0, 1.0); // white
+	volumeColor->AddRGBPoint(20, 1.0, 1.0, 1.0); // white
+	volumeColor->AddRGBPoint(25, 1.0, 1.0, 1.0); // white
+	volumeColor->AddRGBPoint(50, 1.0, 1.0, 1.0); // white
+	volumeColor->AddRGBPoint(60, 1.0, 1.0, 1.0); // white
 	volumeColor->AddRGBPoint(75,  1.0, 0.9, 0.8);
-	volumeColor->AddRGBPoint(150, 1.0, 0.2, 0.2);
+	volumeColor->AddRGBPoint(150, 1.0, 0.4, 0.02);
+	volumeColor->AddRGBPoint(175,  1.0, 0.6, 0.0);
 	volumeColor->AddRGBPoint(200, 1.0, 0.7, 0.0);
 	
 	vtkSmartPointer<vtkVolumeProperty> volumeProperty = vtkSmartPointer<vtkVolumeProperty>::New();
 	volumeProperty->SetColor(volumeColor);
+	volumeProperty->SetGradientOpacity(volumeGradientOpacity);
+	volumeProperty->SetInterpolationTypeToLinear();
+	volumeProperty->ShadeOn();
+	volumeProperty->SetAmbient(0.4);
+	volumeProperty->SetDiffuse(0.6);
+	volumeProperty->SetSpecular(0.2);
 	
+	raycastVolume = vtkSmartPointer<vtkVolume>::New();
+	raycastVolume->SetMapper(rayCastMapper);
 	raycastVolume->SetProperty(volumeProperty);
 	
 	return raycastVolume;
@@ -422,7 +436,7 @@ vtkSmartPointer<vtkActor> MyImage3D::GetSkeletonImage()
 	
 	vtkSmartPointer<vtkContourFilter> contourFilter = vtkSmartPointer<vtkContourFilter>::New();
 	contourFilter->SetInputConnection(skelReader->GetOutputPort()); 
-	contourFilter->SetValue(0, 8.0f);
+	contourFilter->SetValue(0, 16.0f);
 	contourFilter->Update();
 
 	skelMapper = vtkSmartPointer<vtkPolyDataMapper>::New();

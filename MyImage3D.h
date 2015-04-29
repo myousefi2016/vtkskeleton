@@ -39,6 +39,7 @@
 #include <vtkVolumeRayCastCompositeFunction.h>
 #include <vtkVolumeRayCastIsosurfaceFunction.h>
 #include <vtkVolumeRayCastMIPFunction.h>
+#include <vtkPiecewiseFunction.h>
 
 #include <vtkLODActor.h>
 #include <vtkVolume.h>
