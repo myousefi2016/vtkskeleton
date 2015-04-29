@@ -132,15 +132,17 @@ void MyImage3D::findVoxelNeighbors(vector<ushort> * currentVoxel, vector<vector<
 					    b+y < 0 || b+y >= dimensions[1] || 
 					    c+z < 0 || c+z >= dimensions[2]) { continue; }
 
-				neighborVoxelScalar = static_cast<ushort*>(structuredPoints->GetScalarPointer(a+x,b+y,c+z));
-
-				if(neighborVoxelScalar[0] != 0) { neighbors->push_back(makeVector(a+x, b+y, c+z)); }
+				if(isVisited(a+x, b+y, c+z) == false)
+				{
+					neighborVoxelScalar = static_cast<ushort*>(structuredPoints->GetScalarPointer(a+x,b+y,c+z));
+					if(neighborVoxelScalar[0] != 0) { neighbors->push_back(makeVector(a+x, b+y, c+z)); }
+				}	
 			}
 		}
 	}
 }
 
-/*
+/* TODO HAVE TO SECURE FOR LOOPS??
  * Parameters: when this function returns, the end voxel of the branch containing 'currentVoxel'
  *             is in 'endOfBranch'.
  */
@@ -219,37 +221,15 @@ void MyImage3D::getBranch(vector<ushort> * currentVoxel, vector<vector<ushort> >
 		findVoxelNeighbors(currentVoxel, &neighbors);
 		ushort neighborCount = neighbors.size();
 
-		if(neighborCount == 0) { return; } // currentVoxel is an isolated voxel --> Ignore
+		if(neighborCount == 0) { return; }
 
-		else if(neighborCount == 1) // currentVoxel is at the beginning or end of branch
-		{
-			vector<ushort> neighbor = neighbors.at(0);
-			if(isVisited(&neighbor) == false)
-			{
-				copyVoxelValues(&neighbor, currentVoxel);
-			}
+		else if(neighborCount == 1)
+		{ copyVoxelValues(&neighbors.at(0), currentVoxel);}
 
-			else { return; } // Only neighbor already visited == At the end of branch
-		}
-
-		else if(neighborCount == 2) // currentVoxel is in the middle of a branch
-		{
-			vector<ushort> neighbor = neighbors.at(0);
-			if(isVisited(&neighbor) == true) 
-				{ neighbor = neighbors.at(1); }
-
-			copyVoxelValues(&neighbor, currentVoxel);	
-		}
-
-		else if(neighborCount > 2) // This branch has met the ends of other branches == End of this branch
+		else if(neighborCount > 1) // This branch has met the ends of other branches == End of this branch
 		{
 			for(vector<ushort> neighbor : neighbors)
-			{
-				if(isVisited(&neighbor) == false)
-				{
-					voxelsToVisit.push(neighbor);
-				}
-			}
+			{ voxelsToVisit.push(neighbor); }
 			return; 
 		}
 	}	
