@@ -293,8 +293,7 @@ vtkSmartPointer<vtkActor> MyImage3D::GetTubedSkeleton()
 {
 	// -------------Initializing------------//
 	skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-	string vesselsSkelFile = "vessels_skel.vtk";
-	skelReader->SetFileName(vesselsSkelFile.c_str());
+	skelReader->SetFileName("vessels_skel.vtk");
 	skelReader->Update();
 	structuredPoints = skelReader->GetOutput();
 
@@ -365,15 +364,13 @@ vtkSmartPointer<vtkLODActor> MyImage3D::SetLOD()
 }
 
 // Ref: https://github.com/Kitware/VTK/blob/master/Examples/Medical/Cxx/Medical4.cxx
-vtkSmartPointer<vtkVolume> MyImage3D::GetRayCastingImage()
+vtkSmartPointer<vtkVolume> MyImage3D::GetVolume()
 {
 	if (raycastVolume != NULL)
 		return raycastVolume;
 
-	string vesselsDataFile = "vessels_data.vtk";
-
 	dataReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-	dataReader->SetFileName(vesselsDataFile.c_str());
+	dataReader->SetFileName("vessels_data.vtk");
 	dataReader->Update();
  
 	vtkSmartPointer<vtkVolumeRayCastMapper> rayCastMapper = vtkSmartPointer<vtkVolumeRayCastMapper>::New();
@@ -425,10 +422,8 @@ vtkSmartPointer<vtkActor> MyImage3D::GetSegmentedImage()
 	if (segmActor != NULL)
 		return segmActor;
 
-	string vesselsSegFile = "vessels_seg.vtk";
-	
 	segmReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-	segmReader->SetFileName(vesselsSegFile.c_str());
+	segmReader->SetFileName("vessels_seg.vtk");
 	segmReader->Update();
 	
 	vtkSmartPointer<vtkContourFilter> contourFilter = vtkSmartPointer<vtkContourFilter>::New();
@@ -451,10 +446,8 @@ vtkSmartPointer<vtkActor> MyImage3D::GetSkeletonImage()
 	if (skelActor != NULL)
 		return skelActor;
 
-	string vesselsSkelFile = "vessels_skel.vtk";
-	
 	skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-	skelReader->SetFileName(vesselsSkelFile.c_str());
+	skelReader->SetFileName("vessels_skel.vtk");
 	skelReader->Update();
 	
 	vtkSmartPointer<vtkContourFilter> contourFilter = vtkSmartPointer<vtkContourFilter>::New();

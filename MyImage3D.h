@@ -30,7 +30,7 @@
 // Image planes
 #include <vtkImagePlaneWidget.h>
 
-// Ray cast
+// Volume visualization
 #include <vtkVolumeProperty.h>
 #include <vtkColorTransferFunction.h>
 
@@ -50,19 +50,23 @@
 #include <vtkPoints.h>
 #include <vtkCellArray.h>
 #include <vtkPolyLine.h>
+
 using namespace std;
 
 typedef unsigned short ushort;
 
 enum VesselFile {
 	NotLoaded,
-	RayCast,
-	Segmented,
 	Skeleton,
-	SkeletonAndSegmented,
-	TubedSkeleton,
+	SkeletonTubed,
+	SkeletonColored,
+	SkeletonVaryingRadii,
+	Volume,
+	Segmented,
+	SegmentedAndSkeleton
 };
 
+// don't change the order, main.cpp:togglePlane depends on it
 enum ImagePlane {
 	Sagittal,
 	Transversal,
@@ -78,14 +82,29 @@ class MyImage3D
 	vtkSmartPointer<vtkActor> dataActor = NULL, segmActor = NULL, skelActor = NULL, outlineActor = NULL, tubedSkeletonActor = NULL;
 	vtkSmartPointer<vtkVolume> raycastVolume = NULL;
 
+	// Help functions for the public function GetTubedSkeleton()
+	bool isVisited(ushort x, ushort y, ushort z);
+	bool isVisited(vector<ushort> * voxel);
+	void setVisited(ushort x, ushort y, ushort z);
+	void setVisited(vector<ushort> * voxel);
+	vector<ushort> makeVector(ushort a, ushort b, ushort c);
+	bool copyVoxelValues(vector<ushort> * from, vector<ushort> * to);
+	void testPrintingBranch(vector<vector<ushort> >* branch);
+
+	void findVoxelNeighbors(vector<ushort> * currentVoxel, vector<vector<ushort> > * neighbors);
+	void findEndOfBranch(vector<ushort> * currentVoxel, vector<ushort> * endOfBranch);
+	bool findNextVoxel(vector<ushort> * vox);
+	void getBranch(vector<ushort> * currentVoxel, vector<vector<ushort>> * branch);
+	vtkSmartPointer<vtkTubeFilter> makeTube(vector<vector<vector<ushort>>> * branches);
+
+	stack<vector<ushort>> voxelsToVisit;
+	vector<bool> visited;
+
 	public:
 
 		vtkSmartPointer<vtkImageData> vtk_image_data;
 		VesselFile currentVessel;
 		ImagePlane currentPlane;
-
-		stack<vector<ushort> > voxelsToVisit;
-		vector<bool> visited;
 
 		// Image planes
 		vtkSmartPointer<vtkImagePlaneWidget> planes[3];
@@ -111,35 +130,18 @@ class MyImage3D
 		// Fill in the image with the given value
 		void FillInWith(ushort _value);
 
-
-
 		// Create an actor to control the level of detail in rendering
 		vtkSmartPointer<vtkLODActor> SetLOD();
 
 		// Loading VTK files
-		vtkSmartPointer<vtkVolume> GetRayCastingImage();
+		vtkSmartPointer<vtkVolume> GetVolume();
 		vtkSmartPointer<vtkActor> GetSegmentedImage();
 		vtkSmartPointer<vtkActor> GetSkeletonImage();
 		vtkSmartPointer<vtkActor> GetSegmentedOutline();
 		vtkSmartPointer<vtkActor> GetTubedSkeleton();
 
+		// Return access to the reader, for imagePlanesWidget
 		vtkSmartPointer<vtkStructuredPointsReader> GetSegmentedImageReader();
-
-	private:
-		// Help functions for the public function GetTubedSkeleton()
-		bool isVisited(ushort x, ushort y, ushort z);
-		bool isVisited(vector<ushort> * voxel);
-		void setVisited(ushort x, ushort y, ushort z);
-		void setVisited(vector<ushort> * voxel);
-		vector<ushort> makeVector(ushort a, ushort b, ushort c);
-		bool copyVoxelValues(vector<ushort> * from, vector<ushort> * to);
-		void testPrintingBranch(vector<vector<ushort> >* branch);
-
-		void findVoxelNeighbors(vector<ushort> * currentVoxel, vector<vector<ushort> > * neighbors);
-		void findEndOfBranch(vector<ushort> * currentVoxel, vector<ushort> * endOfBranch);
-		bool findNextVoxel(vector<ushort> * vox);
-		void getBranch(vector<ushort> * currentVoxel, vector<vector<ushort> > * branch);
-		vtkSmartPointer<vtkTubeFilter> makeTube(vector<vector<vector<ushort> > >* branches);
 };
 
 #endif

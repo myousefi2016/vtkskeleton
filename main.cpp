@@ -49,7 +49,8 @@ vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor;
 vtkSmartPointer<vtkImagePlaneWidget> planeWidget;
 
 vtkSmartPointer<vtkVolume> volume;
-vtkSmartPointer<vtkActor> segmActor, skelActor, outlineActor, tubedSkeletonActor;
+vtkSmartPointer<vtkActor> segmActor, outlineActor;
+vtkSmartPointer<vtkActor> skelActor, skelTubedActor, skelColoredActor, skelVaryingRadiiActor;
 
 // Menu
 vtkSmartPointer<vtkTextActor> menuCommands, menuVessels, menuLoading;
@@ -69,7 +70,7 @@ string infoCommands[] = {
 	"# Volume rendering:\n[+/-] rotate view\n\n[i] more commands",
 	"# Segmented image:\n[s] sagittal view\n[t] transversal view\n[c] coronal view\n[+/-] scroll through the slices\n\n[i] more commands",
 	"# Skeleton image:\n To complete\n\n[i] more commands",
-	"# Other:\n\n[z] reset zoom\n[e/q] exit\n[i] close commands info"
+	"# Other:\n[z] reset zoom\n[e/q] exit\n\n[i] close commands info"
 };
 int infoCommandsSize = sizeof(infoCommands) / sizeof(infoCommands[0]);
 
@@ -110,7 +111,7 @@ int main(int, char *[])
 	
 	// The first one to load
 	//loadFile(Segmented);
-	loadFile(TubedSkeleton);
+	loadFile(SkeletonTubed);
 
 	renderVTK();
 
@@ -182,13 +183,13 @@ void prepareMenu()
 	menuVessels->GetTextProperty()->SetFontSize(14);
 	menuVessels->GetTextProperty()->SetColor(0.0, 0.0, 1.0);
 	menuVessels->SetDisplayPosition(menuPositionX + 300, menuPositionY);
-	menuVessels->SetInput("[1] skeleton & segmented [6] volume rendering [7] segmented [8] skeleton");
+	menuVessels->SetInput("skeleton: [1] basic [2] tubed [3] colored [4] varying radii\n          [5] volume [6] segmented [7] segmented with skeleton");
 	renderer->AddActor(menuVessels);
 	
 	menuLoading->GetTextProperty()->SetFontFamilyToCourier();
 	menuLoading->GetTextProperty()->SetFontSize(14);
 	menuLoading->GetTextProperty()->SetColor(1.0, 0.0, 0.0);
-	menuLoading->SetDisplayPosition(menuPositionX + 300, menuPositionY + 20);
+	menuLoading->SetDisplayPosition(menuPositionX + 300, menuPositionY + 40);
 	menuLoading->SetInput("Loading, it may take a while...");
 }
 
@@ -208,8 +209,10 @@ void loadVessels(VesselFile type)
 
 	// remove actors and/or volumes
 	renderer->RemoveActor(segmActor);
-	renderer->RemoveActor(tubedSkeletonActor);
 	renderer->RemoveActor(skelActor);
+	renderer->RemoveActor(skelTubedActor);
+	renderer->RemoveActor(skelColoredActor);
+	renderer->RemoveActor(skelVaryingRadiiActor);
 	renderer->RemoveActor(outlineActor);
 	renderer->RemoveVolume(volume);
 
@@ -227,52 +230,53 @@ void loadFile(VesselFile type)
 
 	switch (type)
 	{
-		case RayCast:
-			renderWindow->SetWindowName("Skeleton Visualisation - Volume visualization (vessels_data.vtk)");
+		case Skeleton:
+			renderWindow->SetWindowName("Skeleton Visualization - Skeleton image (vessels_skel.vtk)");
+				skelActor = image.GetSkeletonImage();
+			renderer->AddActor(skelActor);
+			break;
 
-			volume = image.GetRayCastingImage();
+		case SkeletonTubed: 
+			renderWindow->SetWindowName("Skeleton Visualization - Skeleton with a tube");
+				skelTubedActor = image.GetTubedSkeleton();
+			renderer->AddActor(skelTubedActor);
+			break;
 
+		case SkeletonColored:
+			renderWindow->SetWindowName("Skeleton Visualisation - Colored skeleton");
+				//TODO skelColoredActor = 
+			renderer->AddActor(skelColoredActor);
+			break;
+
+		case SkeletonVaryingRadii:
+			renderWindow->SetWindowName("Skeleton Visualisation - Skeleton with varying tube radii");
+				//TODO skelVaryingRadiiActor = 
+			renderer->AddActor(skelVaryingRadiiActor);
+			break;
+
+		case Volume:
+			renderWindow->SetWindowName("Skeleton Visualisation - Volume visualization");
+				volume = image.GetVolume();
 			renderer->AddVolume(volume);
-			break; // not break, we don't want to add vtkActor, only vtkVolume
+			break;
 
 		case Segmented:
-			renderWindow->SetWindowName("Skeleton Visualisation - Segmented image (vessels_seg.vtk)");
-
-			segmActor = image.GetSegmentedImage();
-			segmActor->GetProperty()->SetOpacity(1.0);
-			outlineActor = image.GetSegmentedOutline();
-			setupSegmentedImagePlanes();
-
-			// add actors to renderer
+			renderWindow->SetWindowName("Skeleton Visualization - Segmented image (vessels_seg.vtk)");
+				segmActor = image.GetSegmentedImage();
+				segmActor->GetProperty()->SetOpacity(1.0);
+				outlineActor = image.GetSegmentedOutline();
+				setupSegmentedImagePlanes();
 			renderer->AddActor(segmActor);
 			renderer->AddActor(outlineActor);
 			break;
 
-		case Skeleton:
-			renderWindow->SetWindowName("Skeleton Visualisation - Skeleton image (vessels_skel.vtk)");
-
-			skelActor = image.GetSkeletonImage();
-			
-			renderer->AddActor(skelActor);
-			break;
-
-		case SkeletonAndSegmented:
-			renderWindow->SetWindowName("Skeleton Visualisation - Skeleton and segmented image");
-			
-			segmActor = image.GetSegmentedImage();
-			skelActor = image.GetSkeletonImage();
-
-			segmActor->GetProperty()->SetOpacity(0.3);
-
+		case SegmentedAndSkeleton:
+			renderWindow->SetWindowName("Skeleton Visualization - Skeleton and segmented image");
+				segmActor = image.GetSegmentedImage();
+				segmActor->GetProperty()->SetOpacity(0.3);
+				skelActor = image.GetSkeletonImage();
 			renderer->AddActor(segmActor);
 			renderer->AddActor(skelActor);
-
-			break;
-
-		case TubedSkeleton: 
-			renderWindow->SetWindowName("Work in progress.. skeleton image with a tube");
-			tubedSkeletonActor = image.GetTubedSkeleton();
-			renderer->AddActor(tubedSkeletonActor);
 			break;
 	}
 
@@ -421,7 +425,7 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 
 			int currentSlice = image.planes[image.currentPlane]->GetSliceIndex();
 
-			// vtkImagePlaneWidget takes care of too big/small dimensions
+			// vtkImagePlaneWidget takes care of too big/small slice index
 			if (key == "plus")
 				image.planes[image.currentPlane]->SetSliceIndex(currentSlice + 1);
 			else
@@ -431,14 +435,16 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 		}
 	}
 
-	if (image.currentVessel == RayCast)
+	// Volume
+	if (image.currentVessel == Volume)
 	{
+		// Rotation
 		if (key == "plus") {
-			renderer->GetActiveCamera()->Azimuth(5.0);
+			renderer->GetActiveCamera()->Azimuth(10.0);
 			refreshWindow();
 		}
 		if (key == "minus") {
-			renderer->GetActiveCamera()->Azimuth(-5.0);
+			renderer->GetActiveCamera()->Azimuth(-10.0);
 			refreshWindow();
 		}
 	}
@@ -457,8 +463,12 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	}
 
 	// Vessel files
-	if (key == "1") loadVessels(SkeletonAndSegmented);
-	if (key == "6") loadVessels(RayCast);
-	if (key == "7") loadVessels(Segmented);
-	if (key == "8") loadVessels(Skeleton);
+	if (key == "1") loadVessels(Skeleton);
+	if (key == "2") loadVessels(SkeletonTubed);
+	if (key == "3") loadVessels(SkeletonColored);
+	if (key == "4") loadVessels(SkeletonVaryingRadii);
+
+	if (key == "5") loadVessels(Volume);
+	if (key == "6") loadVessels(Segmented);
+	if (key == "7") loadVessels(SegmentedAndSkeleton);
 }
