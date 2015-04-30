@@ -222,14 +222,16 @@ void MyImage3D::getBranch(vector<ushort> * currentVoxel, vector<vector<ushort> >
 
 		if(neighborCount == 0) { return; } // Isolated voxel OR end of branch found
 
-		else if(neighborCount == 1)
-		{ copyVoxelValues(&neighbors.at(0), currentVoxel); } // Go to neighbor
+		else if(neighborCount == 1) // Beginning or in the middle of branch
+		{ copyVoxelValues(&neighbors.at(0), currentVoxel); } 
 
 		else if(neighborCount > 1) // This branch has met the ends of other branches == End of this branch
 		{
 			for(vector<ushort> neighbor : neighbors)
-			{ voxelsToVisit.push(neighbor); } // Revisit neighbors later
-			return; 
+			{ 
+				voxelsToVisit.push((*currentVoxel)); 
+			} // Revisit neighbors later
+			copyVoxelValues(&neighbors.at(0), currentVoxel);
 		}
 	}	
 }
@@ -252,8 +254,11 @@ vtkSmartPointer<vtkTubeFilter> MyImage3D::makeTube(vector<vector<vector<ushort> 
 	vtkSmartPointer<vtkCellArray> lines = vtkSmartPointer<vtkCellArray>::New();
 	vtkSmartPointer<vtkPolyLine> polyLine;
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+	vtkSmartPointer<vtkFloatArray> scalars = vtkSmartPointer<vtkFloatArray>::New();
 
-	unsigned int i, j, k, branchSize, pointId = 0;
+	// Make polydata of the branches in the image.
+	unsigned int i, j, k, branchSize, pointId = 0, scalarId = 0;
+	double x, y, z, scalar;
 	for(i = 0; i < branches->size(); i++)
 	{
 		vector<vector<ushort> > branch = branches->at(i);
@@ -271,20 +276,29 @@ vtkSmartPointer<vtkTubeFilter> MyImage3D::makeTube(vector<vector<vector<ushort> 
 		for(int k = 0; k < branchSize; k++)
 		{
 			vector<ushort> vox = branch.at(k);
-			points->InsertNextPoint((double)vox.at(0),(double)vox.at(1),(double)vox.at(2));
+			x = (double)vox.at(0); y = (double)vox.at(1); z = (double)vox.at(2);
+			
+			points->InsertNextPoint(x, y, z);
+			
+			//&scalar = static_cast<double*>(structuredPoints->GetScalarPointer(x,y,z));
+			//scalars->InsertTuple1(scalarId, *scalar); scalarId++;
 		}
 	}	
 
 	vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
 	polyData->SetPoints(points);
 	polyData->SetLines(lines);
+	//polyData->GetPointData()->SetScalars(scalars);
+	//-------------------------------------------//
 
 	vtkSmartPointer<vtkTubeFilter> tube = vtkSmartPointer<vtkTubeFilter>::New();
 	tube->SetInputData(polyData);
 
-	tube->SetNumberOfSides(8);
-	//tube->SetVaryRadiusToVaryRadiusByAbsoluteScalar();
-	tube->SetRadius(1);
+	tube->SetNumberOfSides(20);
+	tube->SetRadiusFactor(20);
+	tube->SetVaryRadiusToVaryRadiusByScalar();
+	//tube->SetRadius(1);
+	tube->CappingOn();
 	tube->Update();
 	return tube;
 }

@@ -50,6 +50,8 @@
 #include <vtkPoints.h>
 #include <vtkCellArray.h>
 #include <vtkPolyLine.h>
+#include <vtkFloatArray.h>
+#include <vtkPointData.h>
 
 using namespace std;
 
