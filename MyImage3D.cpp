@@ -306,10 +306,17 @@ vtkSmartPointer<vtkTubeFilter> MyImage3D::makeTube(vector<vector<vector<ushort> 
 // should take a look here for tubefilter info: http://public.kitware.com/pipermail/vtkusers/2003-October/020423.html
 vtkSmartPointer<vtkActor> MyImage3D::GetTubedSkeleton()
 {
+	if (tubedSkeletonActor != NULL)
+		return tubedSkeletonActor;
+
 	// -------------Initializing------------//
-	skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-	skelReader->SetFileName("vessels_skel.vtk");
-	skelReader->Update();
+	if (skelReader == NULL)
+	{
+		skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+		skelReader->SetFileName("vessels_skel.vtk");
+		skelReader->Update();
+	}
+
 	structuredPoints = skelReader->GetOutput();
 
 	while(!voxelsToVisit.empty()) { voxelsToVisit.pop(); }
@@ -461,13 +468,16 @@ vtkSmartPointer<vtkActor> MyImage3D::GetSkeletonImage()
 	if (skelActor != NULL)
 		return skelActor;
 
-	skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-	skelReader->SetFileName("vessels_skel.vtk");
-	skelReader->Update();
+	if (skelReader == NULL)
+	{
+		skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+		skelReader->SetFileName("vessels_skel.vtk");
+		skelReader->Update();
+	}
 	
 	vtkSmartPointer<vtkContourFilter> contourFilter = vtkSmartPointer<vtkContourFilter>::New();
 	contourFilter->SetInputConnection(skelReader->GetOutputPort()); 
-	contourFilter->SetValue(0, 16.0f);
+	contourFilter->SetValue(0, 8.0f);
 	contourFilter->Update();
 
 	skelMapper = vtkSmartPointer<vtkPolyDataMapper>::New();

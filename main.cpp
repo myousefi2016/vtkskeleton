@@ -33,7 +33,7 @@ void prepareMenu();
 void loadVessels();
 void loadFile(VesselFile type);
 void setupSegmentedImagePlanes();
-bool isSkeletonVessel(VesselFile type);
+bool isSkeleton(VesselFile type);
 
 // UI functions
 void toggleCommandsMenu();
@@ -199,27 +199,35 @@ void prepareMenu()
 /*
  * Handles loading different vessels on user's key press
  */
-void loadVessels(VesselFile type)
+void loadVessels(VesselFile next)
 {
-	// drop multiple loads
-	if (loadingData || image.currentVessel == type)
+	// already loading || multiple loads of the same
+	if (loadingData || image.currentVessel == next)
 		return;
 
 	toggleLoading(); // Loading on
 
 	// hide planes if any visible before changing to volume/skeleton view
 	togglePlane(image.currentPlane);
+	
+	// don't remove segmented if switching between skeletons
+	if ((segmentedTransparentVisible && !isSkeleton(next)) || image.currentVessel == Segmented)
+		renderer->RemoveActor(segmActor);
+
+	if (isSkeleton(image.currentVessel) && !isSkeleton(next))
+		segmentedTransparentVisible = false;
 
 	// remove actors and/or volumes
-	renderer->RemoveActor(segmActor);
+	renderer->RemoveActor(outlineActor);
+	renderer->RemoveVolume(volume);
+
+	// remove skeletons only if next one is volume/segmented
 	renderer->RemoveActor(skelActor);
 	renderer->RemoveActor(skelTubedActor);
 	renderer->RemoveActor(skelColoredActor);
 	renderer->RemoveActor(skelVaryingRadiiActor);
-	renderer->RemoveActor(outlineActor);
-	renderer->RemoveVolume(volume);
 
-	loadFile(type); // Load file
+	loadFile(next); // Load file
 
 	toggleLoading(); // Loading off
 }
@@ -234,13 +242,13 @@ void loadFile(VesselFile type)
 	switch (type)
 	{
 		case Skeleton:
-			renderWindow->SetWindowName("Skeleton Visualization - Skeleton image (vessels_skel.vtk)");
+			renderWindow->SetWindowName("Skeleton Visualization - Skeleton");
 				skelActor = image.GetSkeletonImage();
 			renderer->AddActor(skelActor);
 			break;
 
 		case SkeletonTubed: 
-			renderWindow->SetWindowName("Skeleton Visualization - Skeleton with a tube");
+			renderWindow->SetWindowName("Skeleton Visualization - Skeleton as tubes");
 				skelTubedActor = image.GetTubedSkeleton();
 			renderer->AddActor(skelTubedActor);
 			break;
@@ -264,21 +272,13 @@ void loadFile(VesselFile type)
 			break;
 
 		case Segmented:
-			renderWindow->SetWindowName("Skeleton Visualization - Segmented image (vessels_seg.vtk)");
+			renderWindow->SetWindowName("Skeleton Visualization - Segmented image");
 				segmActor = image.GetSegmentedImage();
 				segmActor->GetProperty()->SetOpacity(1.0);
 				outlineActor = image.GetSegmentedOutline();
 				setupSegmentedImagePlanes();
 			renderer->AddActor(segmActor);
 			renderer->AddActor(outlineActor);
-			break;
-
-		case SegmentedTransparent:		// available only for skeleton
-			if (!isSkeletonVessel(image.currentVessel))
-				break;
-			
-			//segmActor = image.GetSegmentedImage();
-			//toggleSegmentedTransparent();
 			break;
 	}
 
@@ -322,7 +322,7 @@ void setupSegmentedImagePlanes()
 	}
 }
 
-bool isSkeletonVessel(VesselFile type)
+bool isSkeleton(VesselFile type)
 {
 	return (type == Skeleton || type == SkeletonTubed || type == SkeletonColored || type == SkeletonVaryingRadii);
 }
@@ -359,15 +359,23 @@ void toggleLoading()
  */
 void toggleSegmentedTransparent()
 {
-	if (segmentedTransparentVisible)
+	if (!isSkeleton(image.currentVessel))
+		return;
+	
+	cout << "toggleSegmentedTransparent" << endl;
+	if (!segmentedTransparentVisible)
 	{
-		segmActor->GetProperty()->SetOpacity(1.0);
-		renderer->RemoveActor(segmActor);
+		toggleLoading(); // Loading on
+
+		segmActor = image.GetSegmentedImage();
+		segmActor->GetProperty()->SetOpacity(0.3);
+		renderer->AddActor(segmActor);
+
+		toggleLoading(); // Loading off
 	}
 	else
 	{
-		segmActor->GetProperty()->SetOpacity(0.3);
-		renderer->AddActor(segmActor);
+		renderer->RemoveActor(segmActor);
 	}
 	
 	segmentedTransparentVisible = !segmentedTransparentVisible;
@@ -432,6 +440,8 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	if (key == "i") {
 		toggleCommandsMenu();
 	}
+
+	cout << "pressed " << key << endl;
 
 	// Segmented image
 	if (image.currentVessel == Segmented)
@@ -517,5 +527,5 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 
 	if (key == "5") loadVessels(Volume);
 	if (key == "6") loadVessels(Segmented);
-	if (key == "0") loadVessels(SegmentedTransparent);
+	if (key == "0") toggleSegmentedTransparent();
 }
