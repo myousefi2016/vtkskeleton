@@ -63,7 +63,7 @@ enum VesselFile {
 	SkeletonVaryingRadii,
 	Volume,
 	Segmented,
-	SegmentedAndSkeleton
+	SegmentedTransparent
 };
 
 // don't change the order, main.cpp:togglePlane depends on it

@@ -167,6 +167,7 @@ void MyImage3D::findEndOfBranch(vector<ushort> * currentVoxel, vector<ushort> * 
 			{
 				copyVoxelValues(currentVoxel, &parentVoxel);
 				copyVoxelValues(&neighbor, currentVoxel); // Go to next voxel
+				return;
 			}
 		}
 	}

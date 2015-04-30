@@ -33,10 +33,12 @@ void prepareMenu();
 void loadVessels();
 void loadFile(VesselFile type);
 void setupSegmentedImagePlanes();
+bool isSkeletonVessel(VesselFile type);
 
 // UI functions
 void toggleCommandsMenu();
 void toggleLoading();
+void toggleSegmentedTransparent();
 void togglePlane(ImagePlane planeToShow);
 void refreshWindow();
 
@@ -62,6 +64,7 @@ const int windowSizeY = 700;
 // Flags
 bool menuInfoVisible = false;
 bool loadingData = false;
+bool segmentedTransparentVisible = false;
 
 // Menu commands
 int infoCurrentPage = 0;
@@ -69,8 +72,8 @@ string infoCommands[] = {
 	"[i] see available commands",
 	"# Volume rendering:\n[+/-] rotate view\n\n[i] more commands",
 	"# Segmented image:\n[s] sagittal view\n[t] transversal view\n[c] coronal view\n[+/-] scroll through the slices\n\n[i] more commands",
-	"# Skeleton image:\n To complete\n\n[i] more commands",
-	"# Other:\n[z] reset zoom\n[e/q] exit\n\n[i] close commands info"
+	"# Skeleton image:\n[0] transparent segmented mesh\n\n[i] more commands",
+	"# Other:\n[z] reset zoom\n[arrows] move mesh\n[e/q] exit\n\n[i] close commands info"
 };
 int infoCommandsSize = sizeof(infoCommands) / sizeof(infoCommands[0]);
 
@@ -183,7 +186,7 @@ void prepareMenu()
 	menuVessels->GetTextProperty()->SetFontSize(14);
 	menuVessels->GetTextProperty()->SetColor(0.0, 0.0, 1.0);
 	menuVessels->SetDisplayPosition(menuPositionX + 300, menuPositionY);
-	menuVessels->SetInput("skeleton: [1] basic [2] tubed [3] colored [4] varying radii\n          [5] volume [6] segmented [7] segmented with skeleton");
+	menuVessels->SetInput("skeleton: [1] basic [2] tubed [3] colored [4] varying radii\n          [5] volume [6] segmented");
 	renderer->AddActor(menuVessels);
 	
 	menuLoading->GetTextProperty()->SetFontFamilyToCourier();
@@ -204,7 +207,7 @@ void loadVessels(VesselFile type)
 
 	toggleLoading(); // Loading on
 
-	// hide planes if any visible before changing to ray casting/skeleton view
+	// hide planes if any visible before changing to volume/skeleton view
 	togglePlane(image.currentPlane);
 
 	// remove actors and/or volumes
@@ -270,13 +273,12 @@ void loadFile(VesselFile type)
 			renderer->AddActor(outlineActor);
 			break;
 
-		case SegmentedAndSkeleton:
-			renderWindow->SetWindowName("Skeleton Visualization - Skeleton and segmented image");
-				segmActor = image.GetSegmentedImage();
-				segmActor->GetProperty()->SetOpacity(0.3);
-				skelActor = image.GetSkeletonImage();
-			renderer->AddActor(segmActor);
-			renderer->AddActor(skelActor);
+		case SegmentedTransparent:		// available only for skeleton
+			if (!isSkeletonVessel(image.currentVessel))
+				break;
+			
+			//segmActor = image.GetSegmentedImage();
+			//toggleSegmentedTransparent();
 			break;
 	}
 
@@ -320,6 +322,11 @@ void setupSegmentedImagePlanes()
 	}
 }
 
+bool isSkeletonVessel(VesselFile type)
+{
+	return (type == Skeleton || type == SkeletonTubed || type == SkeletonColored || type == SkeletonVaryingRadii);
+}
+
 /*
  * Commands info
  */
@@ -344,6 +351,26 @@ void toggleLoading()
 		renderer->AddActor2D(menuLoading);
 
 	loadingData = !loadingData;
+	refreshWindow();
+}
+
+/*
+ * Shows/hides transparent segmented mesh
+ */
+void toggleSegmentedTransparent()
+{
+	if (segmentedTransparentVisible)
+	{
+		segmActor->GetProperty()->SetOpacity(1.0);
+		renderer->RemoveActor(segmActor);
+	}
+	else
+	{
+		segmActor->GetProperty()->SetOpacity(0.3);
+		renderer->AddActor(segmActor);
+	}
+	
+	segmentedTransparentVisible = !segmentedTransparentVisible;
 	refreshWindow();
 }
 
@@ -462,6 +489,26 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 		renderer->ResetCamera();
 	}
 
+	if (key == "Up") {
+		renderer->GetActiveCamera()->Elevation(-2.0);
+		refreshWindow();
+	}
+
+	if (key == "Down") {
+		renderer->GetActiveCamera()->Elevation(2.0);
+		refreshWindow();
+	}
+
+	if (key == "Left") {
+		renderer->GetActiveCamera()->Yaw(-2.0);
+		refreshWindow();
+	}
+
+	if (key == "Right") {
+		renderer->GetActiveCamera()->Yaw(2.0);
+		refreshWindow();
+	}
+
 	// Vessel files
 	if (key == "1") loadVessels(Skeleton);
 	if (key == "2") loadVessels(SkeletonTubed);
@@ -470,5 +517,5 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 
 	if (key == "5") loadVessels(Volume);
 	if (key == "6") loadVessels(Segmented);
-	if (key == "7") loadVessels(SegmentedAndSkeleton);
+	if (key == "0") loadVessels(SegmentedTransparent);
 }
