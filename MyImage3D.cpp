@@ -318,6 +318,7 @@ vtkSmartPointer<vtkActor> MyImage3D::GetTubedSkeleton(double radius, bool varyTu
 	tubeFilter->Update();
 
 	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetScalarRange(0,100);
 	mapper->SetInputConnection(tubeFilter->GetOutputPort());
 	if(colorByScalar == true) { mapper->ScalarVisibilityOn(); }
 	else { mapper->ScalarVisibilityOff(); }
