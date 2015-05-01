@@ -101,6 +101,7 @@ class MyImage3D
 	void getBranch(vector<ushort> * currentVoxel, vector<vector<ushort>> * branch);
 	vtkSmartPointer<vtkPolyData> makePolyData(vector<vector<vector<ushort> > >* branches);
 	vtkSmartPointer<vtkTubeFilter> makeTube(vtkSmartPointer<vtkPolyData> polyData, double radius, bool makeSmooth);
+	void getImageData(vector<vector<vector<ushort> > > * branches);
 
 	stack<vector<ushort>> voxelsToVisit;
 	vector<bool> visited;

@@ -310,36 +310,23 @@ vtkSmartPointer<vtkTubeFilter> MyImage3D::makeTube(vtkSmartPointer<vtkPolyData> 
 	return tube;
 }
 
-// should take a look here for tubefilter info: http://public.kitware.com/pipermail/vtkusers/2003-October/020423.html
-vtkSmartPointer<vtkActor> MyImage3D::GetTubedSkeleton(double radius, bool varyTubeRadiusByScalar, bool colorByScalar)
+/*
+ * Read all voxel positions, branch by branch into 'branches'
+ */
+void MyImage3D::getImageData(vector<vector<vector<ushort> > > * branches)
 {
-	if (tubeFilter == NULL)
-	{
-		// -------------Initializing------------//
-		if (skelReader == NULL)
-		{
-			skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-			skelReader->SetFileName("vessels_skel.vtk");
-			skelReader->Update();
-		}
+	// -------------Initializing------------//
+	while(!voxelsToVisit.empty()) { voxelsToVisit.pop(); }
+	structuredPoints->GetDimensions(dimensions);
+	
+	visited.clear();
+	unsigned int imageSize = dimensions[0]*dimensions[1]*dimensions[2];
+	for(unsigned int i = 0; i < imageSize; i++) visited.push_back(0);
 
-		structuredPoints = skelReader->GetOutput();
+	vector<ushort> voxel, endOfBranch, nextVoxel = makeVector(0, 0, 0);
+	//---------------------------------------//
 
-		while(!voxelsToVisit.empty()) { voxelsToVisit.pop(); }
-		structuredPoints->GetDimensions(dimensions);
-
-		visited.clear();
-		unsigned int imageSize = dimensions[0]*dimensions[1]*dimensions[2];
-		for(unsigned int i = 0; i < imageSize; i++) visited.push_back(0);
-
-		//cout << "Dimensions: " << dimensions[0] << " x " << dimensions[1] << " x " << dimensions[2] << endl;
-		//cout << "Visited size: " << visited.size() << endl;
-
-		vector<ushort> voxel, endOfBranch, nextVoxel = makeVector(0, 0, 0);
-		vector<vector<vector<ushort> > > branches;
-		//---------------------------------------//
-
-		while(true)
+	while(true)
 		{
 			if(voxelsToVisit.empty() == false)
 			{
@@ -354,15 +341,34 @@ vtkSmartPointer<vtkActor> MyImage3D::GetTubedSkeleton(double radius, bool varyTu
 				findEndOfBranch(&voxel, &endOfBranch);	 
 			} 
 
-			else { break; } // If break == End of image
+			else { return; } // End of image
 
 			vector<vector<ushort> > branch;
 			getBranch(&endOfBranch, &branch);
 			
-			if(branch.size() > 1) branches.push_back(branch);
+			if(branch.size() > 1) branches->push_back(branch);
+		}
+}
+
+// should take a look here for tubefilter info: http://public.kitware.com/pipermail/vtkusers/2003-October/020423.html
+vtkSmartPointer<vtkActor> MyImage3D::GetTubedSkeleton(double radius, bool varyTubeRadiusByScalar, bool colorByScalar)
+{
+	if (tubeFilter == NULL)
+	{	
+		if (skelReader == NULL)
+		{
+			skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+			skelReader->SetFileName("vessels_skel.vtk");
+			skelReader->Update();
 		}
 
+		structuredPoints = skelReader->GetOutput();
+
+		vector<vector<vector<ushort> > > branches;
+		getImageData(&branches);
+
 		vtkSmartPointer<vtkPolyData> polyData = makePolyData(&branches);
+		
 		tubeFilter = makeTube(polyData, radius, true);
 	}
 
@@ -373,6 +379,8 @@ vtkSmartPointer<vtkActor> MyImage3D::GetTubedSkeleton(double radius, bool varyTu
 		tubeFilter->Update();
 	}
 
+	else { tubeFilter->SetVaryRadiusToVaryRadiusOff(); }
+
 	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 	mapper->SetInputConnection(tubeFilter->GetOutputPort());
 
@@ -382,11 +390,7 @@ vtkSmartPointer<vtkActor> MyImage3D::GetTubedSkeleton(double radius, bool varyTu
 	tubedSkeletonActor = vtkSmartPointer<vtkActor>::New();
 	tubedSkeletonActor->SetMapper(mapper);
 	return tubedSkeletonActor;
-
-	//std::cout << "Scalar type: " << structuredPoints->GetScalarTypeAsString() << std::endl;
-	//std::cout << "#Scalar components: " << structuredPoints->GetNumberOfScalarComponents() << std::endl;
 }
-
 
 // Work in progress....
 vtkSmartPointer<vtkLODActor> MyImage3D::SetLOD()

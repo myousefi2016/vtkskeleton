@@ -330,7 +330,7 @@ void loadFile(VesselFile type)
 
 		case SkeletonVaryingRadii:
 			renderWindow->SetWindowName("Skeleton Visualisation - Skeleton with varying tube radii");
-			skelVaryingRadiiActor = image.GetTubedSkeleton(image.tubeRadius, false, false);
+			skelVaryingRadiiActor = image.GetTubedSkeleton(image.tubeRadius, true, false);
 			renderer->AddActor(skelVaryingRadiiActor);
 			break;
 
