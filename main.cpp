@@ -208,7 +208,7 @@ void prepareMenu()
 	menuDistance->GetTextProperty()->SetFontSize(14);
 	menuDistance->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
 	menuDistance->SetDisplayPosition(menuPositionX + 800, menuPositionY);
-	menuDistance->SetInput(" "); // otherwise vtkOpenGLTexture (0x57d27d0): No scalar values found for texture input!
+	menuDistance->SetInput(" ");
 	renderer->AddActor(menuDistance);
 }
 
@@ -427,7 +427,7 @@ void drawDistanceLine()
 
 void resetDistancePoints() 
 {
-	setDistanceText("");
+	setDistanceText(" ");
 	startSet = false;
 	stopSet = false;
 }
@@ -554,12 +554,10 @@ void refreshWindow()
 void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(eventId), void* vtkNotUsed(clientData), void* vtkNotUsed(callData))
 {
 	vtkRenderWindowInteractor *iren = static_cast<vtkRenderWindowInteractor*>(caller);
- 
 	string key = iren->GetKeySym();
 
-	if (key == "i") {
+	if (key == "i")
 		toggleCommandsMenu();
-	}
 
 	cout << "pressed " << key << endl;
 
@@ -596,55 +594,36 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	if (image.currentVessel == Volume)
 	{
 		// Rotation
-		if (key == "plus") {
+		if (key == "plus")
 			renderer->GetActiveCamera()->Azimuth(10.0);
-			refreshWindow();
-		}
-		if (key == "minus") {
+		if (key == "minus")
 			renderer->GetActiveCamera()->Azimuth(-10.0);
-			refreshWindow();
-		}
 	}
 
+	// Skeleton
 	if (isSkeleton(image.currentVessel))
 	{
-		if (key == "r") {
+		if (key == "r")
 			resetDistancePoints();
-		}
 	}
 
 	// Zoom in/out
-	if (key == "p") {
+	if (key == "p")
 		renderer->GetActiveCamera()->Zoom(1.25);
-		refreshWindow();
-	}
-	if (key == "m") {
+	if (key == "m")
 		renderer->GetActiveCamera()->Zoom(0.8);
-		refreshWindow();
-	}
-	if (key == "z") {
+	if (key == "z")
 		renderer->ResetCamera();
-	}
 
-	if (key == "Up") {
+	// Arrows
+	if (key == "Up")
 		renderer->GetActiveCamera()->Elevation(-2.0);
-		refreshWindow();
-	}
-
-	if (key == "Down") {
+	if (key == "Down")
 		renderer->GetActiveCamera()->Elevation(2.0);
-		refreshWindow();
-	}
-
-	if (key == "Left") {
+	if (key == "Left")
 		renderer->GetActiveCamera()->Yaw(-2.0);
-		refreshWindow();
-	}
-
-	if (key == "Right") {
+	if (key == "Right")
 		renderer->GetActiveCamera()->Yaw(2.0);
-		refreshWindow();
-	}
 
 	// Vessel files
 	if (key == "1") loadVessels(Skeleton);
@@ -655,4 +634,6 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	if (key == "5") loadVessels(Volume);
 	if (key == "6") loadVessels(Segmented);
 	if (key == "0") toggleSegmentedTransparent();
+
+	refreshWindow();
 }
