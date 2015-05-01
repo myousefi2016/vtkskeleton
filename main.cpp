@@ -22,6 +22,11 @@
 #include <vtkStructuredPointsReader.h>
 #include <vtkStructuredPoints.h>
 
+// Point Picker
+#include <vtkPointPicker.h>
+#include <vtkRendererCollection.h>
+#include <vtkObjectFactory.h>
+
 #include "MyImage3D.h"
 
 using namespace std;
@@ -33,9 +38,15 @@ void prepareMenu();
 void loadVessels();
 void loadFile(VesselFile type);
 void setupSegmentedImagePlanes();
+void addToDistance(int point[3]);
 bool isSkeleton(VesselFile type);
+bool isEmpty(double point[3]);
 
 // UI functions
+void setDistanceText(string text);
+void drawDistanceLine();
+void resetDistancePoints();
+double computeDistance(double a[3], double b[3]);
 void toggleCommandsMenu();
 void toggleLoading();
 void toggleSegmentedTransparent();
@@ -55,7 +66,7 @@ vtkSmartPointer<vtkActor> segmActor, outlineActor;
 vtkSmartPointer<vtkActor> skelActor, skelTubedActor, skelColoredActor, skelVaryingRadiiActor;
 
 // Menu
-vtkSmartPointer<vtkTextActor> menuCommands, menuVessels, menuLoading;
+vtkSmartPointer<vtkTextActor> menuCommands, menuVessels, menuLoading, menuDistance;
 
 // Configuration
 const int windowSizeX = 1000;
@@ -66,18 +77,68 @@ bool menuInfoVisible = false;
 bool loadingData = false;
 bool segmentedTransparentVisible = false;
 
+// Drawing a line for distance
+bool startSet = false;
+bool stopSet = false;
+
 // Menu commands
 int infoCurrentPage = 0;
 string infoCommands[] = {
 	"[i] see available commands",
 	"# Volume rendering:\n[+/-] rotate view\n\n[i] more commands",
 	"# Segmented image:\n[s] sagittal view\n[t] transversal view\n[c] coronal view\n[+/-] scroll through the slices\n\n[i] more commands",
-	"# Skeleton image:\n[0] transparent segmented mesh\n\n[i] more commands",
+	"# Skeleton image:\n[0] transparent segmented mesh\n[click] compute distance between points\n[r] reset selected points\n\n[i] more commands",
 	"# Other:\n[z] reset zoom\n[arrows] move mesh\n[e/q] exit\n\n[i] close commands info"
 };
 int infoCommandsSize = sizeof(infoCommands) / sizeof(infoCommands[0]);
 
 MyImage3D image;
+
+double distanceStart[3];
+double distanceStop[3];
+
+// Define interaction style
+// Ref: http://www.vtk.org/Wiki/VTK/Examples/Cxx/Interaction/PointPicker
+class MouseInteractorStylePP : public vtkInteractorStyleTrackballCamera
+{
+	public:
+		static MouseInteractorStylePP* New();
+		vtkTypeMacro(MouseInteractorStylePP, vtkInteractorStyleTrackballCamera);
+ 
+		virtual void OnLeftButtonUp() 
+		{
+			// only for skeleton images
+			if (!isSkeleton(image.currentVessel))
+				return;
+
+			//int x = this->Interactor->GetEventPosition()[0];
+			//int y = this->Interactor->GetEventPosition()[1];
+			//int z = this->Interactor->GetEventPosition()[2];
+			//cout << "Picking pixel: " << x << " " << y << " " << z << endl;
+
+			// pick a point
+			this->Interactor->GetPicker()->Pick(
+				this->Interactor->GetEventPosition()[0], 
+				this->Interactor->GetEventPosition()[1],
+				this->Interactor->GetEventPosition()[2],
+				this->Interactor->GetRenderWindow()->GetRenderers()->GetFirstRenderer()
+			);
+
+			// get value of picked point
+			double picked[3];
+			this->Interactor->GetPicker()->GetPickPosition(picked);
+			//cout << "Picked value: " << picked[0] << " " << picked[1] << " " << picked[2] << std::endl;
+
+			// if not empty = belongs to the skeleton
+			if (!isEmpty(picked))
+				addToDistance(this->Interactor->GetEventPosition());
+
+			// forward events
+			vtkInteractorStyleTrackballCamera::OnLeftButtonUp();
+		}
+};
+
+vtkStandardNewMacro(MouseInteractorStylePP);
 
 int main(int, char *[])
 {
@@ -127,8 +188,6 @@ void initVTK()
 	renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
 	renderer = vtkSmartPointer<vtkRenderer>::New();
 
-	vtkSmartPointer<vtkInteractorStyleTrackballCamera> interactorStyle = vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
-	
 	renderer->SetBackground(1.0, 1.0, 1.0);
 
 	renderWindow->AddRenderer(renderer);
@@ -143,7 +202,9 @@ void initVTK()
 	prepareMenu();
 
 	renderWindowInteractor->SetRenderWindow(renderWindow);
-	renderWindowInteractor->SetInteractorStyle(interactorStyle);
+
+	vtkSmartPointer<MouseInteractorStylePP> style = vtkSmartPointer<MouseInteractorStylePP>::New();
+	renderWindowInteractor->SetInteractorStyle(style);
 }
 
 void renderVTK()
@@ -171,6 +232,7 @@ void prepareMenu()
 	menuCommands = vtkSmartPointer<vtkTextActor>::New();
 	menuVessels = vtkSmartPointer<vtkTextActor>::New();
 	menuLoading = vtkSmartPointer<vtkTextActor>::New();
+	menuDistance = vtkSmartPointer<vtkTextActor>::New();
 
 	int menuPositionX = 10;
 	int menuPositionY = 10; // padding from bottom
@@ -194,6 +256,13 @@ void prepareMenu()
 	menuLoading->GetTextProperty()->SetColor(1.0, 0.0, 0.0);
 	menuLoading->SetDisplayPosition(menuPositionX + 300, menuPositionY + 40);
 	menuLoading->SetInput("Loading, it may take a while...");
+
+	menuDistance->GetTextProperty()->SetFontFamilyToCourier();
+	menuDistance->GetTextProperty()->SetFontSize(14);
+	menuDistance->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
+	menuDistance->SetDisplayPosition(menuPositionX + 800, menuPositionY);
+	menuDistance->SetInput(" "); // otherwise vtkOpenGLTexture (0x57d27d0): No scalar values found for texture input!
+	renderer->AddActor(menuDistance);
 }
 
 /*
@@ -322,9 +391,108 @@ void setupSegmentedImagePlanes()
 	}
 }
 
+void addToDistance(int point[3])
+{
+	if (!startSet || (startSet && stopSet))
+	{
+		if (startSet && stopSet)
+			resetDistancePoints();
+
+		distanceStart[0] = (double) point[0];
+		distanceStart[1] = (double) point[1];
+		distanceStart[2] = (double) point[2];
+
+		startSet = true;
+		setDistanceText("Choose end point");
+	}
+	else if (!stopSet)
+	{
+		distanceStop[0] = (double) point[0];
+		distanceStop[1] = (double) point[1];
+		distanceStop[2] = (double) point[2];
+
+		stopSet = true;
+
+		double distance = computeDistance(distanceStart, distanceStop);
+
+		stringstream stream;
+		stream << "Distance: " << distance;
+		setDistanceText(stream.str());
+
+		//drawDistanceLine();
+	}
+}
+
+void setDistanceText(string text)
+{
+	menuDistance->SetInput(text.c_str());
+	refreshWindow();
+}
+
+// not working properly
+void drawDistanceLine()
+{
+	//cout << "drawing line" << endl;
+	vtkSmartPointer<vtkPolyLine> polyLine = vtkSmartPointer<vtkPolyLine>::New();
+	polyLine->GetPointIds()->SetNumberOfIds(2);
+	polyLine->GetPointIds()->SetId(0, 0); // start
+	polyLine->GetPointIds()->SetId(1, 1); // stop
+
+	// Create a vtkPoints object and store the points in it
+	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+	points->InsertNextPoint(distanceStart);
+	points->InsertNextPoint(distanceStop);
+	
+	// Create a cell array to store the line
+	vtkSmartPointer<vtkCellArray> cells = vtkSmartPointer<vtkCellArray>::New();
+	cells->InsertNextCell(polyLine);
+
+	// Create a polydata to store everything in
+	vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+	polyData->SetPoints(points); // Add the points to the dataset
+	polyData->SetLines(cells); // Add the lines to the dataset
+
+	vtkSmartPointer<vtkTubeFilter> tube = vtkSmartPointer<vtkTubeFilter>::New();
+	tube->SetInputData(polyData);
+
+	tube->SetNumberOfSides(20);
+	tube->SetRadiusFactor(20);
+	tube->SetVaryRadiusToVaryRadiusByScalar();
+	tube->SetRadius(5);
+	tube->CappingOn();
+	tube->Update();
+
+	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetInputConnection(tube->GetOutputPort());
+	mapper->ScalarVisibilityOn();
+
+	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+	actor->SetMapper(mapper);
+
+	renderer->AddActor(actor);
+	refreshWindow();
+}
+
+void resetDistancePoints() 
+{
+	setDistanceText("");
+	startSet = false;
+	stopSet = false;
+}
+
+double computeDistance(double a[3], double b[3])
+{
+	return sqrt((a[0] - b[0])*(a[0] - b[0]) + (a[1] - b[1])*(a[1] - b[1]) + (a[2] - b[2])*(a[2] - b[2]));
+}
+
 bool isSkeleton(VesselFile type)
 {
 	return (type == Skeleton || type == SkeletonTubed || type == SkeletonColored || type == SkeletonVaryingRadii);
+}
+
+bool isEmpty(double pointVal[3])
+{
+	return (pointVal[0] == 0 && pointVal[1] == 0 && pointVal[2] == 0);
 }
 
 /*
@@ -483,6 +651,13 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 		if (key == "minus") {
 			renderer->GetActiveCamera()->Azimuth(-10.0);
 			refreshWindow();
+		}
+	}
+
+	if (isSkeleton(image.currentVessel))
+	{
+		if (key == "r") {
+			resetDistancePoints();
 		}
 	}
 
