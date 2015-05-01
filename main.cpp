@@ -34,6 +34,7 @@ using namespace std;
 // Functions
 void initVTK();
 void renderVTK();
+void setLOD(ushort lod);
 void prepareMenu();
 void loadVessels();
 void loadFile(VesselFile type);
@@ -56,11 +57,12 @@ void refreshWindow();
 void KeypressCallbackFunction (vtkObject* caller, long unsigned int eventId, void* clientData, void* callData);
 
 // VTK window
-vtkSmartPointer<vtkRenderer> renderer;
+vtkSmartPointer<vtkRenderer> renderer = NULL;
 vtkSmartPointer<vtkRenderWindow> renderWindow;
 vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor;
 vtkSmartPointer<vtkImagePlaneWidget> planeWidget;
 
+vtkSmartPointer<vtkLODActor> lodActor = NULL;
 vtkSmartPointer<vtkVolume> volume;
 vtkSmartPointer<vtkActor> segmActor, outlineActor;
 vtkSmartPointer<vtkActor> skelActor, skelTubedActor, skelColoredActor, skelVaryingRadiiActor;
@@ -143,38 +145,9 @@ vtkStandardNewMacro(MouseInteractorStylePP);
 int main(int, char *[])
 {
 	initVTK();
-
-	// Example of creating a new 3-D image and initializing it with 0:
-	//image.Set(230, 256, 256);
-	//image.FillInWith(0);
-
-	//Put some voxel values in the image:
-	//image.Index(1,2,3) = 15;
-	//image.Index(4,2,2) = 5;
-	//image.Index(8,6,3) = 7;
-	//image.Index(5,6,8) = 20000;
-	//image.Index(3,3,3) = 1;
-	//image.Index(1,1,1) = 15;
-
-	// Example of going through the whole 3-D image and finding the maximum value:
-	/*unsigned short maximum;
-	maximum = image.Index(0,0,0);
-	int dims_xyz[3];
-	image.vtk_image_data->GetDimensions(dims_xyz);
-	for (int s = 0; s < dims_xyz[2]; s++)
-	{
-		for (int r = 0; r < dims_xyz[1]; r++)
-		{
-			for (int c = 0; c<dims_xyz[0]; c++)
-			{
-				if (image.Index(s,r,c) > maximum)
-					maximum = image.Index(s,r,c);
-			}
-		}
-	}*/
+	//setLOD(20);
 	
 	// The first one to load
-	//loadFile(Segmented);
 	loadFile(SkeletonTubed);
 
 	renderVTK();
@@ -189,7 +162,7 @@ void initVTK()
 	renderer = vtkSmartPointer<vtkRenderer>::New();
 
 	renderer->SetBackground(1.0, 1.0, 1.0);
-
+	
 	renderWindow->AddRenderer(renderer);
 	renderWindow->SetSize(windowSizeX, windowSizeY);
 	
@@ -213,13 +186,16 @@ void renderVTK()
 	renderWindowInteractor->Start();
 }
 
-
 /*
  * Set the update rate (level of detail of the image) in 'lod' frames/second
  */
-void setLOD(int lod)
+void setLOD(ushort lod)
 {
-	//if(lodActor == NULL || renderWindow == NULL) return 0;
+	if(lodActor == NULL) 
+	{ 
+		lodActor = image.GetLODActor(); 
+		if(renderer != NULL) { renderer->AddActor(lodActor); }
+	}
 	renderWindow->SetDesiredUpdateRate(lod);
 }
 
@@ -312,7 +288,7 @@ void loadFile(VesselFile type)
 	{
 		case Skeleton:
 			renderWindow->SetWindowName("Skeleton Visualization - Skeleton");
-				skelActor = image.GetSkeletonImage();
+			skelActor = image.GetSkeletonImage();
 			renderer->AddActor(skelActor);
 			break;
 
@@ -336,16 +312,16 @@ void loadFile(VesselFile type)
 
 		case Volume:
 			renderWindow->SetWindowName("Skeleton Visualisation - Volume visualization");
-				volume = image.GetVolume();
+			volume = image.GetVolume();
 			renderer->AddVolume(volume);
 			break;
 
 		case Segmented:
 			renderWindow->SetWindowName("Skeleton Visualization - Segmented image");
-				segmActor = image.GetSegmentedImage();
-				segmActor->GetProperty()->SetOpacity(1.0);
-				outlineActor = image.GetSegmentedOutline();
-				setupSegmentedImagePlanes();
+			segmActor = image.GetSegmentedImage();
+			segmActor->GetProperty()->SetOpacity(1.0);
+			outlineActor = image.GetSegmentedOutline();
+			setupSegmentedImagePlanes();
 			renderer->AddActor(segmActor);
 			renderer->AddActor(outlineActor);
 			break;

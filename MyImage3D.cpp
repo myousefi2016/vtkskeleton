@@ -1,71 +1,11 @@
 /**************************************************************************
  3D Image class for unsigned short (16-bit unsigned) values
 
- Author: Danilo Babin
+ Author: Eric Klaesson, Damian Tarnacki
  File name: "MyImage3D.cpp"
 ***************************************************************************/
 
 #include "MyImage3D.h"
-
-int MyImage3D::IsEmpty()
-{
-	int dims_xyz[3];
-	this->vtk_image_data->GetDimensions(dims_xyz);
-
-	if (dims_xyz[0] == 0 || dims_xyz[1] == 0 || dims_xyz[2] == 0) return 1;
-	else return 0;
-}
-
-void MyImage3D::Set(unsigned int _slices, unsigned int _rows, unsigned int _columns)
-{
-	assert((_slices > 0) && (_rows > 0) && (_columns > 0));
-
-	int dims_xyz[3];
-	this->vtk_image_data->GetDimensions(dims_xyz);
-
-	// If the size is already the required size, just return
-	if((_slices==dims_xyz[2]) && (_rows==dims_xyz[1]) && (_columns==dims_xyz[0])) return;
-
-	// Allocate memory in a sequential way using VTK
-	// this->vtk_image_data->SetExtent(0,_columns-1,0,_rows-1,0,_slices-1);
-	this->vtk_image_data->SetDimensions(_columns,_rows,_slices);
-	vtkInformation *info = this->vtk_image_data->GetInformation();//vtkInformation::New();//IZMENA!!!	
-	this->vtk_image_data->SetPointDataActiveScalarInfo(info,VTK_UNSIGNED_SHORT,1);//IZMENA!!!
-	//this->vtk_image_data->SetScalarTypeToUnsignedShort();
-	//this->vtk_image_data->SetNumberOfScalarComponents(1);
-	this->vtk_image_data->AllocateScalars(VTK_UNSIGNED_SHORT,1);
-	this->vtk_image_data->SetSpacing(1,1,1);//Set spacing to default 	
-	this->vtk_image_data->SetOrigin(0,0,0);//Set origin to default 
-}
-
-ushort& MyImage3D::Index(unsigned int _slices, unsigned int _rows, unsigned int _columns)
-{
-	int dims_xyz[3];
-	this->vtk_image_data->GetDimensions(dims_xyz);
-
-	assert((((unsigned int)_slices) < dims_xyz[2]) && (((unsigned int)_rows) < dims_xyz[1]) && (((unsigned int)_columns) < dims_xyz[0]));
-
-	// Get the pointer to data
-	ushort *pointer = (ushort*)(this->vtk_image_data->GetScalarPointer());
-
-	return (pointer[(dims_xyz[0]*dims_xyz[1]*_slices + dims_xyz[0]*_rows + _columns)]);
-}
-
-void MyImage3D::FillInWith(ushort _value)
-{
-	assert(!this->IsEmpty());
-
-	for(int s = 0; s < this->vtk_image_data->GetDimensions()[2]; s++)
-	{
-		for(int r = 0; r < this->vtk_image_data->GetDimensions()[1]; r++)
-		{
-			for(int c = 0; c < this->vtk_image_data->GetDimensions()[0]; c++)
-			{
-				this->Index(s,r,c) = _value;
-			}
-		}
-	}
-}
 
 bool MyImage3D::copyVoxelValues(vector<ushort> * from, vector<ushort> * to)
 {
@@ -241,27 +181,29 @@ vtkSmartPointer<vtkPolyData> MyImage3D::makePolyData(vector<vector<vector<ushort
 	vtkSmartPointer<vtkPolyLine> polyLine;
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 	vtkSmartPointer<vtkFloatArray> scalars = vtkSmartPointer<vtkFloatArray>::New();
+	vector<vector<ushort> > branch;
+	vector<ushort> vox;
 
-	unsigned int i, j, k, branchSize, pointId = 0, scalarId = 0;
+	unsigned int b, l, v, branchSize, pointId = 0, scalarId = 0;
 	double x, y, z; 
 	ushort* scalar;
-	for(i = 0; i < branches->size(); i++)
+	for(b = 0; b < branches->size(); b++)
 	{
-		vector<vector<ushort> > branch = branches->at(i);
+		branch = branches->at(b);
 		branchSize = branch.size();
 
 		// Make every branch its own polyline
 		polyLine = vtkSmartPointer<vtkPolyLine>::New();
 		polyLine->GetPointIds()->SetNumberOfIds(branchSize);
 
-		for(j = 0; j < branchSize; j++)
-   		{ polyLine->GetPointIds()->SetId(j, pointId); pointId++; }
+		for(l = 0; l < branchSize; l++)
+   		{ polyLine->GetPointIds()->SetId(l, pointId); pointId++; }
    		lines->InsertNextCell(polyLine);
    		//----------------------------------//
 
-		for(int k = 0; k < branchSize; k++)
+		for(int v = 0; v < branchSize; v++)
 		{
-			vector<ushort> vox = branch.at(k);
+			vox = branch.at(v);
 			x = (double)vox.at(0); y = (double)vox.at(1); z = (double)vox.at(2);
 			
 			points->InsertNextPoint(x, y, z);
@@ -283,9 +225,6 @@ vtkSmartPointer<vtkTubeFilter> MyImage3D::makeTube(vtkSmartPointer<vtkPolyData> 
 {
 	vtkSmartPointer<vtkTubeFilter> tube = vtkSmartPointer<vtkTubeFilter>::New();
 
-	bool spline = true;
-	bool dataCleanUp = true; 
-
 	if(makeSmooth == true)
 	{
 		// Make the tubed skeleton smoother with the spline filter.
@@ -306,7 +245,6 @@ vtkSmartPointer<vtkTubeFilter> MyImage3D::makeTube(vtkSmartPointer<vtkPolyData> 
 	tube->SetNumberOfSides(10);
 	tube->SetRadius(radius);
 	tube->CappingOn();
-	tube->Update();
 	return tube;
 }
 
@@ -361,7 +299,6 @@ vtkSmartPointer<vtkActor> MyImage3D::GetTubedSkeleton(double radius, bool varyTu
 			skelReader->SetFileName("vessels_skel.vtk");
 			skelReader->Update();
 		}
-
 		structuredPoints = skelReader->GetOutput();
 
 		vector<vector<vector<ushort> > > branches;
@@ -375,15 +312,13 @@ vtkSmartPointer<vtkActor> MyImage3D::GetTubedSkeleton(double radius, bool varyTu
 	if(varyTubeRadiusByScalar == true)
 	{
 		tubeFilter->SetVaryRadiusToVaryRadiusByScalar();
-		tubeFilter->SetRadiusFactor(10);
-		tubeFilter->Update();
+		tubeFilter->SetRadiusFactor(10);	
 	}
-
 	else { tubeFilter->SetVaryRadiusToVaryRadiusOff(); }
+	tubeFilter->Update();
 
 	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 	mapper->SetInputConnection(tubeFilter->GetOutputPort());
-
 	if(colorByScalar == true) { mapper->ScalarVisibilityOn(); }
 	else { mapper->ScalarVisibilityOff(); }
 
@@ -393,9 +328,10 @@ vtkSmartPointer<vtkActor> MyImage3D::GetTubedSkeleton(double radius, bool varyTu
 }
 
 // Work in progress....
-vtkSmartPointer<vtkLODActor> MyImage3D::SetLOD()
+vtkSmartPointer<vtkLODActor> MyImage3D::GetLODActor()
 {
-	vtkSmartPointer<vtkLODActor> lodActor = vtkSmartPointer<vtkLODActor>::New();
+	if (lodActor != NULL)
+		return lodActor;
 
 	vtkSmartPointer<vtkOutlineFilter> lowResFilter = vtkSmartPointer<vtkOutlineFilter>::New();
 	vtkSmartPointer<vtkMaskPoints> medResFilter = vtkSmartPointer<vtkMaskPoints>::New();

@@ -1,7 +1,7 @@
 /**************************************************************************
  3D Image class for unsigned short (16-bit unsigned) values
 
- Author: Danilo Babin
+ Author: Danilo Babin, Eric Klaesson, Damian Tarnacki
  File name: "MyImage3D.h"
 ***************************************************************************/
 
@@ -11,7 +11,6 @@
 #define vtkRenderingCore_AUTOINIT 4(vtkInteractionStyle, vtkRenderingFreeType, vtkRenderingFreeTypeOpenGL, vtkRenderingOpenGL)
 #define vtkRenderingVolume_AUTOINIT 1(vtkRenderingVolumeOpenGL)
 
-#include <assert.h>
 #include <vtkSmartPointer.h>
 #include <vtkImageData.h>
 #include <string>
@@ -31,6 +30,7 @@
 #include <vtkImagePlaneWidget.h>
 
 // Volume visualization
+#include <vtkVolume.h>
 #include <vtkVolumeProperty.h>
 #include <vtkColorTransferFunction.h>
 
@@ -42,7 +42,6 @@
 #include <vtkPiecewiseFunction.h>
 
 #include <vtkLODActor.h>
-#include <vtkVolume.h>
 #include <vtkMaskPoints.h>
 
 #include <vtkTubeFilter.h>
@@ -85,6 +84,7 @@ class MyImage3D
 	vtkSmartPointer<vtkPolyDataMapper> dataMapper, segmMapper, skelMapper, outlineMapper;
 	vtkSmartPointer<vtkActor> dataActor = NULL, segmActor = NULL, skelActor = NULL, outlineActor = NULL, tubedSkeletonActor = NULL;
 	vtkSmartPointer<vtkVolume> raycastVolume = NULL;
+	vtkSmartPointer<vtkLODActor> lodActor = NULL;
 
 	// Help functions for the public function GetTubedSkeleton()
 	bool isVisited(ushort x, ushort y, ushort z);
@@ -124,21 +124,8 @@ class MyImage3D
 			currentPlane = None;
 		};
 
-		//If the image is empty return true (1), else return fail (0).
-		int IsEmpty();
-
-		// Creates a new image of given size
-		void Set(unsigned int _slices, unsigned int _rows, unsigned int _columns);
-		
-		// Return the voxel value at index: _slices, _rows, _columns. Note that in (real) world coordinates
-		// the slice index corresponds to Z axis, rows to Y axis and columns to X axis.
-		ushort& Index(unsigned int _slices, unsigned int _rows, unsigned int _columns); 
-
-		// Fill in the image with the given value
-		void FillInWith(ushort _value);
-
 		// Create an actor to control the level of detail in rendering
-		vtkSmartPointer<vtkLODActor> SetLOD();
+		vtkSmartPointer<vtkLODActor> GetLODActor();
 
 		// Loading VTK files
 		vtkSmartPointer<vtkVolume> GetVolume();
