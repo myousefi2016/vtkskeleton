@@ -105,6 +105,37 @@ void MyImage3D::setVisited(ushort x, ushort y, ushort z)
 void MyImage3D::setVisited(vector<ushort> * voxel) 
 { setVisited(voxel->at(0), voxel->at(1), voxel->at(2)); }
 
+/* Parameters: 'vox' should contain {0, 0, 0} the very first time this function is
+ *             executed. It is then important that the content on the address of 'vox'
+ *             is only changed in this function.
+ * Returns: FALSE when the search is at the last voxel of the image, TRUE otherwise.
+ */ 
+bool MyImage3D::findNextVoxel(vector<ushort> * vox)
+{
+	ushort * voxelScalarValue;
+	ushort x, y, z;
+
+	for(x = vox->at(0); x < dimensions[0]; x++)
+	{
+		for(y = vox->at(1); y < dimensions[1]; y++)
+		{
+			for(z = vox->at(2); z < dimensions[2]; z++)
+			{
+				if(isVisited(x, y, z) == false)
+				{
+					voxelScalarValue = static_cast<ushort*>(structuredPoints->GetScalarPointer(x,y,z));
+					if(voxelScalarValue[0] != 0)
+					{
+						(*vox) = makeVector(x, y, z);
+						return true;
+					}
+					else { setVisited(x, y, z); }
+				}
+			}
+		}
+	}
+	return false; 
+}
 
 /*
  * Parameters: the addresses of the neighboring voxels of 'currentVoxel' is
@@ -167,42 +198,10 @@ void MyImage3D::findEndOfBranch(vector<ushort> * currentVoxel, vector<ushort> * 
 			{
 				copyVoxelValues(currentVoxel, &parentVoxel);
 				copyVoxelValues(&neighbor, currentVoxel); // Go to next voxel
-				return;
+				break;
 			}
 		}
 	}
-}
-
-/* Parameters: 'vox' should contain {0, 0, 0} the very first time this function is
- *             executed. It is then important that the content on the address of 'vox'
- *             is only changed in this function.
- * Returns: FALSE when the search is at the last voxel of the image, TRUE otherwise.
- */ 
-bool MyImage3D::findNextVoxel(vector<ushort> * vox)
-{
-	ushort * voxelScalarValue;
-	ushort x, y, z;
-
-	for(x = vox->at(0); x < dimensions[0]; x++)
-	{
-		for(y = vox->at(1); y < dimensions[1]; y++)
-		{
-			for(z = vox->at(2); z < dimensions[2]; z++)
-			{
-				if(isVisited(x, y, z) == false)
-				{
-					voxelScalarValue = static_cast<ushort*>(structuredPoints->GetScalarPointer(x,y,z));
-					if(voxelScalarValue[0] != 0)
-					{
-						(*vox) = makeVector(x, y, z);
-						return true;
-					}
-					else { setVisited(x, y, z); }
-				}
-			}
-		}
-	}
-	return false; 
 }
 
 /*
@@ -236,29 +235,16 @@ void MyImage3D::getBranch(vector<ushort> * currentVoxel, vector<vector<ushort> >
 	}	
 }
 
-// TODO: for testing. Just remove this function when done...
-void MyImage3D::testPrintingBranch(vector<vector<ushort> >* branch)
-{
-	vector<ushort> voxel;
-	cout << "Branch: " << endl;
-	for(int i = 0; i < branch->size(); i++)
-		{
-			voxel = branch->at(i);
-			cout << "	" << i << ": " << voxel.at(0) << ", " << voxel.at(1) << ", " << voxel.at(2) << endl;
-		}
-		cout << endl;
-}
-
-vtkSmartPointer<vtkTubeFilter> MyImage3D::makeTube(vector<vector<vector<ushort> > >* branches)
+vtkSmartPointer<vtkPolyData> MyImage3D::makePolyData(vector<vector<vector<ushort> > >* branches)
 {
 	vtkSmartPointer<vtkCellArray> lines = vtkSmartPointer<vtkCellArray>::New();
 	vtkSmartPointer<vtkPolyLine> polyLine;
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 	vtkSmartPointer<vtkFloatArray> scalars = vtkSmartPointer<vtkFloatArray>::New();
 
-	// Make polydata of the branches in the image.
 	unsigned int i, j, k, branchSize, pointId = 0, scalarId = 0;
-	double x, y, z, scalar;
+	double x, y, z; 
+	ushort* scalar;
 	for(i = 0; i < branches->size(); i++)
 	{
 		vector<vector<ushort> > branch = branches->at(i);
@@ -280,86 +266,119 @@ vtkSmartPointer<vtkTubeFilter> MyImage3D::makeTube(vector<vector<vector<ushort> 
 			
 			points->InsertNextPoint(x, y, z);
 			
-			//&scalar = static_cast<double*>(structuredPoints->GetScalarPointer(x,y,z));
-			//scalars->InsertTuple1(scalarId, *scalar); scalarId++;
+			scalar = static_cast<ushort*>(structuredPoints->GetScalarPointer(x,y,z));
+			scalars->InsertTuple1(scalarId, (double) scalar[0]); scalarId++;
 		}
 	}	
 
 	vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
 	polyData->SetPoints(points);
 	polyData->SetLines(lines);
-	//polyData->GetPointData()->SetScalars(scalars);
-	//-------------------------------------------//
+	polyData->GetPointData()->SetScalars(scalars);
 
+	return polyData;
+}
+
+vtkSmartPointer<vtkTubeFilter> MyImage3D::makeTube(vtkSmartPointer<vtkPolyData> polyData, double radius, bool makeSmooth)
+{
 	vtkSmartPointer<vtkTubeFilter> tube = vtkSmartPointer<vtkTubeFilter>::New();
-	tube->SetInputData(polyData);
 
-	tube->SetNumberOfSides(20);
-	tube->SetRadiusFactor(20);
-	tube->SetVaryRadiusToVaryRadiusByScalar();
-	//tube->SetRadius(1);
+	bool spline = true;
+	bool dataCleanUp = true; 
+
+	if(makeSmooth == true)
+	{
+		// Make the tubed skeleton smoother with the spline filter.
+		vtkSmartPointer<vtkSplineFilter> splinedPolyData = vtkSmartPointer<vtkSplineFilter>::New(); 
+		splinedPolyData->SetInputData(polyData);
+		splinedPolyData->SetNumberOfSubdivisions(polyData->GetPoints()->GetNumberOfPoints()/20);
+		splinedPolyData->Update();
+		
+		// Clean polylines who have coincident points. Otherwise some normals cannot be computed.
+		vtkSmartPointer<vtkCleanPolyData> cleanPolyData = vtkSmartPointer<vtkCleanPolyData>::New();
+		cleanPolyData->SetInputConnection(splinedPolyData->GetOutputPort());
+		cleanPolyData->Update();
+		tube->SetInputConnection(cleanPolyData->GetOutputPort());
+	}
+
+	else { tube->SetInputData(polyData); }
+
+	tube->SetNumberOfSides(10);
+	tube->SetRadius(radius);
 	tube->CappingOn();
 	tube->Update();
 	return tube;
 }
 
 // should take a look here for tubefilter info: http://public.kitware.com/pipermail/vtkusers/2003-October/020423.html
-vtkSmartPointer<vtkActor> MyImage3D::GetTubedSkeleton()
+vtkSmartPointer<vtkActor> MyImage3D::GetTubedSkeleton(double radius, bool varyTubeRadiusByScalar, bool colorByScalar)
 {
-	if (tubedSkeletonActor != NULL)
-		return tubedSkeletonActor;
-
-	// -------------Initializing------------//
-	if (skelReader == NULL)
+	if (tubeFilter == NULL)
 	{
-		skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-		skelReader->SetFileName("vessels_skel.vtk");
-		skelReader->Update();
-	}
-
-	structuredPoints = skelReader->GetOutput();
-
-	while(!voxelsToVisit.empty()) { voxelsToVisit.pop(); }
-	structuredPoints->GetDimensions(dimensions);
-
-	visited.clear();
-	unsigned int imageSize = dimensions[0]*dimensions[1]*dimensions[2];
-	for(int i = 0; i < imageSize; i++) visited.push_back(0);
-
-	//cout << "Dimensions: " << dimensions[0] << " x " << dimensions[1] << " x " << dimensions[2] << endl;
-	//cout << "Visited size: " << visited.size() << endl;
-
-	vector<ushort> voxel, endOfBranch, nextVoxel = makeVector(0, 0, 0);
-	vector<vector<vector<ushort> > > branches;
-	//---------------------------------------//
-
-	while(true)
-	{
-		if(voxelsToVisit.empty() == false)
+		// -------------Initializing------------//
+		if (skelReader == NULL)
 		{
-			endOfBranch = voxelsToVisit.top();
-			voxelsToVisit.pop();
+			skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+			skelReader->SetFileName("vessels_skel.vtk");
+			skelReader->Update();
 		}
-		
-		else if(findNextVoxel(&nextVoxel) == true) 
-		{ 
-			// Important: ONLY change 'nextVoxel' in function 'findNextVoxel'!
-			copyVoxelValues(&nextVoxel, &voxel);
-			findEndOfBranch(&voxel, &endOfBranch);	 
-		} 
 
-		else { break; } // If break == End of image
+		structuredPoints = skelReader->GetOutput();
 
-		vector<vector<ushort> > branch;
-		getBranch(&endOfBranch, &branch);
-		
-		if(branch.size() > 1) branches.push_back(branch);
+		while(!voxelsToVisit.empty()) { voxelsToVisit.pop(); }
+		structuredPoints->GetDimensions(dimensions);
+
+		visited.clear();
+		unsigned int imageSize = dimensions[0]*dimensions[1]*dimensions[2];
+		for(unsigned int i = 0; i < imageSize; i++) visited.push_back(0);
+
+		//cout << "Dimensions: " << dimensions[0] << " x " << dimensions[1] << " x " << dimensions[2] << endl;
+		//cout << "Visited size: " << visited.size() << endl;
+
+		vector<ushort> voxel, endOfBranch, nextVoxel = makeVector(0, 0, 0);
+		vector<vector<vector<ushort> > > branches;
+		//---------------------------------------//
+
+		while(true)
+		{
+			if(voxelsToVisit.empty() == false)
+			{
+				endOfBranch = voxelsToVisit.top();
+				voxelsToVisit.pop();
+			}
+			
+			else if(findNextVoxel(&nextVoxel) == true) 
+			{ 
+				// Important: ONLY change 'nextVoxel' in function 'findNextVoxel'!
+				copyVoxelValues(&nextVoxel, &voxel);
+				findEndOfBranch(&voxel, &endOfBranch);	 
+			} 
+
+			else { break; } // If break == End of image
+
+			vector<vector<ushort> > branch;
+			getBranch(&endOfBranch, &branch);
+			
+			if(branch.size() > 1) branches.push_back(branch);
+		}
+
+		vtkSmartPointer<vtkPolyData> polyData = makePolyData(&branches);
+		tubeFilter = makeTube(polyData, radius, true);
 	}
 
-	vtkSmartPointer<vtkTubeFilter> tubeFilter = makeTube(&branches);
+	if(varyTubeRadiusByScalar == true)
+	{
+		tubeFilter->SetVaryRadiusToVaryRadiusByScalar();
+		tubeFilter->SetRadiusFactor(10);
+		tubeFilter->Update();
+	}
+
 	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 	mapper->SetInputConnection(tubeFilter->GetOutputPort());
-	mapper->ScalarVisibilityOn();
+
+	if(colorByScalar == true) { mapper->ScalarVisibilityOn(); }
+	else { mapper->ScalarVisibilityOff(); }
+
 	tubedSkeletonActor = vtkSmartPointer<vtkActor>::New();
 	tubedSkeletonActor->SetMapper(mapper);
 	return tubedSkeletonActor;

@@ -52,6 +52,8 @@
 #include <vtkPolyLine.h>
 #include <vtkFloatArray.h>
 #include <vtkPointData.h>
+#include <vtkCleanPolyData.h>
+#include <vtkSplineFilter.h>
 
 using namespace std;
 
@@ -79,6 +81,7 @@ class MyImage3D
 {
 	vtkSmartPointer<vtkStructuredPointsReader> dataReader, segmReader, skelReader;
 	vtkSmartPointer<vtkStructuredPoints> structuredPoints;
+	vtkSmartPointer<vtkTubeFilter> tubeFilter = NULL;
 	vtkSmartPointer<vtkPolyDataMapper> dataMapper, segmMapper, skelMapper, outlineMapper;
 	vtkSmartPointer<vtkActor> dataActor = NULL, segmActor = NULL, skelActor = NULL, outlineActor = NULL, tubedSkeletonActor = NULL;
 	vtkSmartPointer<vtkVolume> raycastVolume = NULL;
@@ -96,7 +99,8 @@ class MyImage3D
 	void findEndOfBranch(vector<ushort> * currentVoxel, vector<ushort> * endOfBranch);
 	bool findNextVoxel(vector<ushort> * vox);
 	void getBranch(vector<ushort> * currentVoxel, vector<vector<ushort>> * branch);
-	vtkSmartPointer<vtkTubeFilter> makeTube(vector<vector<vector<ushort>>> * branches);
+	vtkSmartPointer<vtkPolyData> makePolyData(vector<vector<vector<ushort> > >* branches);
+	vtkSmartPointer<vtkTubeFilter> makeTube(vtkSmartPointer<vtkPolyData> polyData, double radius, bool makeSmooth);
 
 	stack<vector<ushort>> voxelsToVisit;
 	vector<bool> visited;
@@ -110,6 +114,7 @@ class MyImage3D
 		// Image planes
 		vtkSmartPointer<vtkImagePlaneWidget> planes[3];
 		int dimensions[3];
+		double tubeRadius = 0.2;
 
 		MyImage3D()
 		{
@@ -139,7 +144,7 @@ class MyImage3D
 		vtkSmartPointer<vtkActor> GetSegmentedImage();
 		vtkSmartPointer<vtkActor> GetSkeletonImage();
 		vtkSmartPointer<vtkActor> GetSegmentedOutline();
-		vtkSmartPointer<vtkActor> GetTubedSkeleton();
+		vtkSmartPointer<vtkActor> GetTubedSkeleton(double tubeRadius, bool varyTubeRadiusByScalar, bool colorByScalar);
 
 		// Return access to the reader, for imagePlanesWidget
 		vtkSmartPointer<vtkStructuredPointsReader> GetSegmentedImageReader();

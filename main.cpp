@@ -249,19 +249,19 @@ void loadFile(VesselFile type)
 
 		case SkeletonTubed: 
 			renderWindow->SetWindowName("Skeleton Visualization - Skeleton as tubes");
-				skelTubedActor = image.GetTubedSkeleton();
+			skelTubedActor = image.GetTubedSkeleton(image.tubeRadius, false, false);
 			renderer->AddActor(skelTubedActor);
 			break;
 
 		case SkeletonColored:
 			renderWindow->SetWindowName("Skeleton Visualisation - Colored skeleton");
-				//TODO skelColoredActor = 
+			skelColoredActor = image.GetTubedSkeleton(image.tubeRadius, false, true);
 			renderer->AddActor(skelColoredActor);
 			break;
 
 		case SkeletonVaryingRadii:
 			renderWindow->SetWindowName("Skeleton Visualisation - Skeleton with varying tube radii");
-				//TODO skelVaryingRadiiActor = 
+			skelVaryingRadiiActor = image.GetTubedSkeleton(image.tubeRadius, false, false);
 			renderer->AddActor(skelVaryingRadiiActor);
 			break;
 
