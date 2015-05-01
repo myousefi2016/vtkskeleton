@@ -6,7 +6,7 @@ PROJECT(Skeleton)
 find_package(VTK REQUIRED)
 include(${VTK_USE_FILE})
 
-set(HEADER_FILES MyImage3D.h)
+set(HEADER_FILES MyImage3D.h functions.h)
 set(SOURCE_FILES MyImage3D.cpp main.cpp)
 add_executable(Skeleton MACOSX_BUNDLE ${HEADER_FILES} ${SOURCE_FILES})
 

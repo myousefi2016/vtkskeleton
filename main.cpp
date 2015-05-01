@@ -77,22 +77,17 @@ double distanceStop[3];
 
 // Define interaction style
 // Ref: http://www.vtk.org/Wiki/VTK/Examples/Cxx/Interaction/PointPicker
-class MouseInteractorStylePP : public vtkInteractorStyleTrackballCamera
+class PointPickerStyle : public vtkInteractorStyleTrackballCamera
 {
 	public:
-		static MouseInteractorStylePP* New();
-		vtkTypeMacro(MouseInteractorStylePP, vtkInteractorStyleTrackballCamera);
+		static PointPickerStyle* New();
+		vtkTypeMacro(PointPickerStyle, vtkInteractorStyleTrackballCamera);
  
 		virtual void OnLeftButtonUp() 
 		{
 			// only for skeleton images
 			if (!isSkeleton(image.currentVessel))
 				return;
-
-			//int x = this->Interactor->GetEventPosition()[0];
-			//int y = this->Interactor->GetEventPosition()[1];
-			//int z = this->Interactor->GetEventPosition()[2];
-			//cout << "Picking pixel: " << x << " " << y << " " << z << endl;
 
 			// pick a point
 			this->Interactor->GetPicker()->Pick(
@@ -116,7 +111,7 @@ class MouseInteractorStylePP : public vtkInteractorStyleTrackballCamera
 		}
 };
 
-vtkStandardNewMacro(MouseInteractorStylePP);
+vtkStandardNewMacro(PointPickerStyle);
 
 int main(int, char *[])
 {
@@ -152,7 +147,7 @@ void initVTK()
 
 	renderWindowInteractor->SetRenderWindow(renderWindow);
 
-	vtkSmartPointer<MouseInteractorStylePP> style = vtkSmartPointer<MouseInteractorStylePP>::New();
+	vtkSmartPointer<PointPickerStyle> style = vtkSmartPointer<PointPickerStyle>::New();
 	renderWindowInteractor->SetInteractorStyle(style);
 }
 
@@ -302,7 +297,6 @@ void loadFile(VesselFile type)
 			renderer->AddActor(outlineActor);
 			break;
 	}
-
 }
 
 /*
@@ -311,6 +305,12 @@ void loadFile(VesselFile type)
  */
 void setupSegmentedImagePlanes()
 {
+	if (image.planes[0] != NULL)
+	{
+		cout << "juz ustawione" << endl;
+		return;
+	}
+
 	vtkSmartPointer<vtkCellPicker> picker = vtkSmartPointer<vtkCellPicker>::New();
 	picker->SetTolerance(0.005);
 
