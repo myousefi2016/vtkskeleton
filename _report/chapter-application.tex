@@ -50,7 +50,7 @@ A class vtkImagePlaneWidget was used to show the cut from the segmented data (Fi
 \begin{figure}
 	\centering
 	\includegraphics[scale=0.6]{fig/segmented-skeleton}
-	\caption{vtkContourFilter used to render segmented and skeleton images.}
+	\caption{vtkContourFilter used to render segmented and skeleton mesh.}
 	\label{fig:segmented-skeleton}
 \end{figure}
 
@@ -82,6 +82,20 @@ TODO : -	Build the skeleton using the vtkTubeFilter (single tube should be used 
 -	How does the skeleton look like? Are the branches smooth? Why?\\
 -	Make the branches smooth.\\
 
+\begin{figure}
+	\centering
+	\includegraphics[scale=0.4]{fig/skeleton-basic-tubed}
+	\caption{Skeleton basic (left) and tubed (right) view.}
+	\label{fig:skeleton-basic-tubed}
+\end{figure}
+
+\begin{figure}
+	\centering
+	\includegraphics[scale=0.4]{fig/skeleton-colored-radius}
+	\caption{Skeleton colored (left) and with varying radius (right) view.}
+	\label{fig:skeleton-colored-radius}
+\end{figure}
+
 \section{Volume visualization}
 
 \begin{figure}
@@ -103,13 +117,21 @@ For any skeleton mesh there is a possibility to measure Euclidean distance. An E
 
 We distinguish 6 meshes:
 \begin{itemize}
-	\item Skeleton basic view, by reading directly from file without modifications except vtkContourFilter (key "1")
-	\item Skeleton tubed view, as above but vtkTubeFilter is used (key "2")
-	\item Skeleton colored view (key "3")
-	\item Skeleton varying radius view (key "4")
-	\item Volume visualization (key "5")
-	\item Segmented view (key "6")
+	\item Key "1": skeleton basic view, by reading directly from file without modifications except vtkContourFilter (Figure~\ref{fig:skeleton-basic-tubed})
+	\item Key "2": skeleton tubed view, as above but vtkTubeFilter is used (Figure~\ref{fig:skeleton-basic-tubed})
+	\item Key "3": skeleton colored view (Figure~\ref{fig:skeleton-colored-radius})
+	\item Key "4": skeleton varying radius view (Figure~\ref{fig:skeleton-colored-radius})
+	\item Key "5": volume visualization (Figure~\ref{fig:volume-rendering})
+	\item Key "6": segmented view (Figure~\ref{fig:segmented-skeleton})
 \end{itemize}
+
+\begin{figure}
+	\centering
+	\includegraphics[scale=0.4]{fig/skeleton-transparent-segmented}
+	\caption{Skeleton view with transparent segmented mesh.}
+	\label{fig:skeleton-transparent-segmented}
+\end{figure}
+
 
 Additionally, for any skeleton view, a transparent segmented mesh can be shown by pressing "0" key. It will be hidden after pressing "0" again.
 
