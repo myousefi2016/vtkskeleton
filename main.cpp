@@ -86,8 +86,11 @@ class PointPickerStyle : public vtkInteractorStyleTrackballCamera
 		virtual void OnLeftButtonUp() 
 		{
 			// only for skeleton images
-			if (!isSkeleton(image.currentVessel))
+			if (!isSkeleton(image.currentVessel)) {
+			
+				vtkInteractorStyleTrackballCamera::OnLeftButtonUp(); // forward events
 				return;
+			}
 
 			// pick a point
 			this->Interactor->GetPicker()->Pick(
