@@ -65,7 +65,7 @@ string infoCommands[] = {
 	"[i] see available commands",
 	"# Volume rendering:\n[+/-] rotate view\n\n[i] more commands",
 	"# Segmented image:\n[s] sagittal view\n[t] transversal view\n[c] coronal view\n[+/-] scroll through the slices\n\n[i] more commands",
-	"# Skeleton image:\n[0] transparent segmented mesh\n[click] compute distance between points\n[r] reset selected points\n\n[i] more commands",
+	"# Skeleton image:\n[0] transparent segmented mesh\n[click] compute distance between points\n[x] reset selected points\n\n[i] more commands",
 	"# Other:\n[z] reset zoom\n[arrows] move mesh\n[e/q] exit\n\n[i] close commands info"
 };
 int infoCommandsSize = sizeof(infoCommands) / sizeof(infoCommands[0]);
@@ -598,15 +598,11 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 	// Skeleton
 	if (isSkeleton(image.currentVessel))
 	{
-		if (key == "r")
+		if (key == "x")
 			resetDistancePoints();
 	}
 
-	// Zoom in/out
-	if (key == "p")
-		renderer->GetActiveCamera()->Zoom(1.25);
-	if (key == "m")
-		renderer->GetActiveCamera()->Zoom(0.8);
+	// Zoom reset
 	if (key == "z")
 		renderer->ResetCamera();
 
