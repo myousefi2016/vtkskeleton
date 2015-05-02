@@ -481,20 +481,3 @@ vtkSmartPointer<vtkStructuredPointsReader> MyImage3D::GetSegmentedImageReader()
 {
 	return segmReader;
 }
-
-// Work in progress....
-vtkSmartPointer<vtkLODActor> MyImage3D::GetLODActor()
-{
-	if (lodActor != NULL)
-		return lodActor;
-
-	vtkSmartPointer<vtkOutlineFilter> lowResFilter = vtkSmartPointer<vtkOutlineFilter>::New();
-	vtkSmartPointer<vtkMaskPoints> medResFilter = vtkSmartPointer<vtkMaskPoints>::New();
-	
-	lodActor->SetLowResFilter(lowResFilter);
-	
-	lodActor->SetMediumResFilter(medResFilter);
-	lodActor->SetNumberOfCloudPoints(20);
-
-	return lodActor;
-}

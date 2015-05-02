@@ -161,20 +161,6 @@ void renderVTK()
 }
 
 /*
- * Set the update rate (level of detail of the image) in 'lod' frames/second
- */
-void setLOD(ushort lod)
-{
-	if(lodActor == NULL) 
-	{ 
-		lodActor = image.GetLODActor(); 
-		if(renderer != NULL) { renderer->AddActor(lodActor); }
-	}
-	renderWindow->SetDesiredUpdateRate(lod);
-}
-
-
-/*
  * Prepare menu and info messages
  */
 void prepareMenu()
@@ -246,6 +232,9 @@ void loadVessels(VesselFile next)
 	renderer->RemoveActor(skelColoredActor);
 	renderer->RemoveActor(skelVaryingRadiiActor);
 
+	renderWindowInteractor->SetDesiredUpdateRate(15); // Default value == 15
+	renderWindowInteractor->SetStillUpdateRate(0.0001); // Default value == 0.0001
+
 	loadFile(next); // Load file
 
 	toggleLoading(); // Loading off
@@ -288,6 +277,9 @@ void loadFile(VesselFile type)
 			renderWindow->SetWindowName("Skeleton Visualisation - Volume visualization");
 			volume = image.GetVolume();
 			renderer->AddVolume(volume);
+
+			renderWindowInteractor->SetDesiredUpdateRate(20); // Update rate in moving the camera view
+			renderWindowInteractor->SetStillUpdateRate(20); // Update rate in the still view
 			break;
 
 		case Segmented:

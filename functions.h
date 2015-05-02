@@ -1,7 +1,6 @@
 // Functions
 void initVTK();
 void renderVTK();
-void setLOD(ushort lod);
 void prepareMenu();
 void loadVessels();
 void loadFile(VesselFile type);

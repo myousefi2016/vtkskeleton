@@ -125,9 +125,6 @@ class MyImage3D
 
 		// Return access to the reader, for imagePlanesWidget
 		vtkSmartPointer<vtkStructuredPointsReader> GetSegmentedImageReader();
-
-		// Create an actor to control the level of detail in rendering
-		vtkSmartPointer<vtkLODActor> GetLODActor();
 };
 
 #endif
