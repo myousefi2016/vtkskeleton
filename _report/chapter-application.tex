@@ -97,9 +97,21 @@ Because rendering requires complex computation, the image is blurred while rotat
 
 \section{Point picker and distance calculation}
 
+For any skeleton mesh there is a possibility to measure Euclidean distance. An Ecuclidean distance between two voxels can be measured by clicking on skeleton mesh. The result will be displayed in bottom right corner of the window. Reset of selected start voxel can be performed with "x" key.
 
 \section{Visualization}
 
+We distinguish 6 meshes:
+\begin{itemize}
+	\item Skeleton basic view, by reading directly from file without modifications except vtkContourFilter (key "1")
+	\item Skeleton tubed view, as above but vtkTubeFilter is used (key "2")
+	\item Skeleton colored view (key "3")
+	\item Skeleton varying radius view (key "4")
+	\item Volume visualization (key "5")
+	\item Segmented view (key "6")
+\end{itemize}
+
+Additionally, for any skeleton view, a transparent segmented mesh can be shown by pressing "0" key. It will be hidden after pressing "0" again.
 
 \section{Using the Spline Widget}
 
