@@ -30,9 +30,9 @@ The following structure corresponds to the project instruction.
 \textbf{2} Character string header terminated with \textbackslash n (max. 256 characters).\\
 \textbf{3} File format: ASCII or BINARY.\\
 \textbf{4} Dataset structure describing the geometry and topology of the dataset. Available structures: STRUCTURED\_POINTS, STRUCTURED\_GRID, UNSTRUCTURED\_GRID, POLYDATA, RECTILINEAR\_GRID, FIELD.\\
-\textbf{5} Dataset attributes, number of data items = number of points in the dataset; dimension x*y*z = POINT\_DATA
+\textbf{5} Dataset attributes, number of data items = number of points in the dataset; dimension x*y*z = POINT\_DATA.
 
-The data in the given files is compressed by means of storing a single grayscale value for each point. Apart from this, no futher compression to file is applied.
+The data in the given files is compressed by means of storing a single grayscale value for each voxel. Apart from this, no futher compression is applied.
 
 \section{Planes for different views}
 
@@ -42,7 +42,7 @@ The data in the given files is compressed by means of storing a single grayscale
 	\caption{Coronal view for segmented image.}\label{fig:image-plane}
 \end{figure}
 
-A class vtkImagePlaneWidget was used to show the cut from the segmented data (Figure \ref{fig:image-plane}). In segmented image view we can show sagittal, transversal and coronal views by pressing S, T and C keys respectively. The segmented image is then hidden in order to show a cut and scrolling through the slices is possible by pressing + and - keys.
+A class vtkImagePlaneWidget was used to show the cut from the segmented data (Figure \ref{fig:image-plane}). In segmented image view we can show sagittal, transversal and coronal views by pressing S, T and C keys respectively. The segmented image is then hidden in order to show a cut. Scrolling through the slices is possible by pressing + and - keys.
 
 \section{Marching cubes and building the skeleton}
 
@@ -72,7 +72,7 @@ A class vtkImagePlaneWidget was used to show the cut from the segmented data (Fi
 \end{lstlisting}
 
 A class vtkContourFilter was used to render segmented and skeleton images as they are in provided files (Figure \ref{fig:segmented-skeleton}).
-The visualized skeleton path is not continuous due to provided data that was processed by vtkContourFilter. The values occur alone, the adjacent ones have value zero (Listing 1.1). If this situation occurs, there is a small cube mesh built around this voxel (Figure \ref{fig:marching-cubes-1-point}). Similar case is with two voxels with non-zero value (Figure \ref{fig:marching-cubes-2-points}).
+The visualized skeleton path is not continuous due to provided data that was processed by vtkContourFilter. The values occur alone, the adjacent ones have value zero (Listing 1.1). If this situation occurs, vtkContourFilter will build a small cube mesh around this voxel (Figure \ref{fig:marching-cubes-1-point}). Similar case is with two voxels with non-zero value (Figure \ref{fig:marching-cubes-2-points}).
 
 \begin{figure}
 	\centering
@@ -80,25 +80,22 @@ The visualized skeleton path is not continuous due to provided data that was pro
 	\caption{Skeleton basic (left) and tubed (right) view.}\label{fig:skeleton-basic-tubed}
 \end{figure}
 
-The tube filter generates a tube around each input line. Therefore we made lines between each of the neighboring voxels in the image. First we had to find each voxel, and connect them branch by branch. Next comes a description of our algorithm to solve that problem.
+The tube filter generates a tube around each input line. Therefore we made lines between each of the neighboring voxels in the image. First we had to find each voxel, and connect them branch by branch. Next comes a description of our algorithm to solve this problem.
 
-The algorithm of making polydata out of the skeleton image data is mainly done in 4 steps.
-\begin{itemize}
+The algorithm of making polydata out of the skeleton image data is mainly done in 4 steps:
+\begin{enumerate}
+	\item First find a voxel of the image, by greedily searching through the image voxel by voxel. Every voxel has a scalar value x, where x = 0 means that the voxel is not part of the image and x > 0, means that it is. 
 
-\item Find first a voxel of the image, by greedily searching though the image voxel by voxel. Every voxel has a scalar value x, where x = 0 means that the voxel is not part of the image and x > 0, means that it is. 
+	\item Then find the end of the branch of found voxel. This is done by travelling from neighbor to neighbor until an end of the branch is found. In the search for neighbors of one voxel, the 26 surrounding voxels are investigated. Only unvisited neighbors are considered.
 
-\item Then find the end of the branch of that voxel. This is done by travelling from neighbor to neighbor until an end of the branch is found. In the search for neighbors of one voxel, the 26 surrounding voxels is investigated. Only unvisited neighbors are considered.
+	\item Starting with the end of the branch, the complete branch is found, while marking every found voxel visited. An end of a branch has either one neighbor or more than two neighbors. When an end that has more than two neighbors is found, the unvisited neighbors are saved to a stack S.
 
-\item Starting with the end of the branch, the complete branch is found, while marking every found voxel visited. An end of a branch has either one neighbor or more than two neighbors. When an end that has more than two neighbors is found, the unvisited neighbors are saved to a stack S.
+	\item Take a voxel from stack S and repeat step 3. If S is empty, go to step 1. The algorithm finishes when the search at step 1 reaches the last voxel of the image.
+\end{enumerate}
 
-\item Take a voxel from stack S and repeat step 3. If S is empty, go to step 1. The algorithm finishes when the search at step 1 reaches the last voxel of the image.
+After the search, polydata is made by making a polyline for each branch, making a point for each voxel and finally add the voxel scalars to the polydata. The vtkTubeFilter can then be used to generate a tube around each polyline. This results in a skeleton that is not smooth. That is, the tubed skeleton forms a zig-zag pattern. We believe that the amount of points were too few for making it smooth.
 
-\end{itemize}
-
-After the search, polydata is made by making a polyline for each branch, making a point for each voxel and finally also add the voxel scalars to the polydata. The vtkTubeFilter can then be used to generate a tube around each polyline. This results in a skeleton that is not smooth. That is, the tubed skeleton forms a zick-zack pattern. We believe that the amount of points were too few for making it smooth.
-
-To make the branches smooth we increased the number of polylines in the skeleton stucture with the vtkSplineFilter, which uniformly divides each line into several lines. Lines which have coincidental points are ignored by the spline filter, so to avoid that problem those coincidental points are removed by filtering the data through the vtkCleanPolyData filter.
-
+To make the branches smooth we increased the number of polylines in the skeleton structure with the vtkSplineFilter, which uniformly divides each line into several lines. Lines which have coincidental points are ignored by the spline filter, so to avoid that problem those coincidental points are removed by filtering the data through the vtkCleanPolyData filter.
 
 \begin{figure}
 	\centering
@@ -106,7 +103,7 @@ To make the branches smooth we increased the number of polylines in the skeleton
 	\caption{Skeleton colored (left) and with varying radius (right) view.}\label{fig:skeleton-colored-radius}
 \end{figure}
 
-If the scalars have been added to the polydata, making the radii and color vary by the scalar value of each voxel are simply done by two function calls (vtkTubeFilter::SetVaryRadiusToVaryRadiusByScalar(), vtkPolyDataMapper::ScalarVisibilityOn())
+If the scalars have been added to the polydata, making the radii and color vary by the scalar value of each voxel are simply done by two functions calls (vtkTubeFilter::SetVaryRadiusToVaryRadiusByScalar(), vtkPolyDataMapper::ScalarVisibilityOn()).
 
 \section{Volume visualization}
 
@@ -118,9 +115,7 @@ If the scalars have been added to the polydata, making the radii and color vary 
 
 The volume visualization was obtained by using vtkVolumeRayCastMapper with vessels\_data.vtk (Figure \ref{fig:volume-rendering}). The crucial part was to set proper RGB points in vtkColorTransferFunction which correspond to luminance values from the VTK file.
 
-Because it is very demanding to do volume visualization it can be useful to change the level of detail (LOD).
-
-We first tried to add a vtkLODActor to the renderer. We set the low- and medium resolution filters of the LODActor, so that the actor would take care of the level of detail automatically as we changed the update rate of the render window interactor. vtkOutlineFilter as a low resolution filter and vtkMaskPoints as a medium resolution filter as were the default filters according to the VTK API. But as we noticed that we could simply change the level of detail with a single function call to the render window interactor without adding a LODActor, we used that functionality instead. There are two function calls to the render window interactor to have in mind here. vtkRenderWindowInteractor::SetDesiredUpdateRate(rate) controls the update rate when the camera is used to rotated or zoom in on the image. The default value of this rate is 15 frames/second. vtkRenderWindowInteractor::SetStillUpdateRate(rate) is for the update rate when the movement has stopped. When doing the volume rendering there could be a considerable difference in speed when using these two functions, especially if your computer is of an older model.
+Because it is very demanding to do volume visualization it can be useful to change the level of detail (LOD). There are two function calls to the render window interactor to have in mind here. vtkRenderWindowInteractor::SetDesiredUpdateRate(rate) controls the update rate when the camera is used to rotated or zoom in on the image. The default value of this rate is 15 frames/second. vtkRenderWindowInteractor::SetStillUpdateRate(rate) is for the update rate when the movement has stopped. When doing the volume rendering there could be a considerable difference in speed when using these two functions, especially if a computer does not have enough computing resources.
 
 \section{Point picker and distance calculation}
 
@@ -130,12 +125,12 @@ For any skeleton mesh there is a possibility to measure Euclidean distance. An E
 
 We distinguish 6 meshes:
 \begin{itemize}
-	\item Key "1": skeleton basic view, by reading directly from file without modifications except vtkContourFilter (Figure~\ref{fig:skeleton-basic-tubed})
-	\item Key "2": skeleton tubed view, as above but vtkTubeFilter is used (Figure~\ref{fig:skeleton-basic-tubed})
-	\item Key "3": skeleton colored view (Figure~\ref{fig:skeleton-colored-radius})
-	\item Key "4": skeleton varying radius view (Figure~\ref{fig:skeleton-colored-radius})
-	\item Key "5": volume visualization (Figure~\ref{fig:volume-rendering})
-	\item Key "6": segmented view (Figure~\ref{fig:segmented-skeleton})
+	\item Key "1": skeleton basic view, by reading directly from file without modifications except vtkContourFilter (Figure~\ref{fig:skeleton-basic-tubed}).
+	\item Key "2": skeleton tubed view, as above but vtkTubeFilter is used (Figure~\ref{fig:skeleton-basic-tubed}).
+	\item Key "3": skeleton colored view (Figure~\ref{fig:skeleton-colored-radius}).
+	\item Key "4": skeleton varying radius view (Figure~\ref{fig:skeleton-colored-radius}).
+	\item Key "5": volume visualization (Figure~\ref{fig:volume-rendering}).
+	\item Key "6": segmented view (Figure~\ref{fig:segmented-skeleton}).
 \end{itemize}
 
 \begin{figure}
