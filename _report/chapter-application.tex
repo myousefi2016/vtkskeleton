@@ -1,5 +1,5 @@
 \chapter{Results}
-The following structure corresponds to the project instructions.
+The following structure corresponds to the project instruction.
 
 % Example: insert image
 % \includegraphics{fig/NameOfTheFileWithoutExtension}
@@ -39,8 +39,7 @@ The data in the given files is compressed by means of storing a single grayscale
 \begin{figure}
 	\centering
 	\includegraphics[scale=0.3]{fig/image-plane}
-	\caption{Coronal view for segmented image.}
-	\label{fig:image-plane}
+	\caption{Coronal view for segmented image.}\label{fig:image-plane}
 \end{figure}
 
 A class vtkImagePlaneWidget was used to show the cut from the segmented data (Figure \ref{fig:image-plane}). In segmented image view we can show sagittal, transversal and coronal views by pressing S, T and C keys respectively. The segmented image is then hidden in order to show a cut and scrolling through the slices is possible by pressing + and - keys.
@@ -50,22 +49,19 @@ A class vtkImagePlaneWidget was used to show the cut from the segmented data (Fi
 \begin{figure}
 	\centering
 	\includegraphics[scale=0.6]{fig/segmented-skeleton}
-	\caption{vtkContourFilter used to render segmented and skeleton images.}
-	\label{fig:segmented-skeleton}
+	\caption{vtkContourFilter used to render segmented and skeleton mesh.}\label{fig:segmented-skeleton}
 \end{figure}
 
 \begin{figure}
 	\centering
 	\includegraphics[scale=0.6]{fig/marching-cubes-1-point}
-	\caption{Only one voxel with non-zero value (all other voxels are set to 0.)}
-	\label{fig:marching-cubes-1-point}
+	\caption{Only one voxel with non-zero value (all other voxels are set to 0.)}\label{fig:marching-cubes-1-point}
 \end{figure}
 
 \begin{figure}
 	\centering
 	\includegraphics[scale=0.6]{fig/marching-cubes-2-points}
-	\caption{Two voxels with non-zero value (all other voxels are set to 0.)}
-	\label{fig:marching-cubes-2-points}
+	\caption{Two voxels with non-zero value (all other voxels are set to 0.)}\label{fig:marching-cubes-2-points}
 \end{figure}
 
 % label doesn't work :/
@@ -78,9 +74,11 @@ A class vtkImagePlaneWidget was used to show the cut from the segmented data (Fi
 A class vtkContourFilter was used to render segmented and skeleton images as they are in provided files (Figure \ref{fig:segmented-skeleton}).
 The visualized skeleton path is not continuous due to provided data that was processed by vtkContourFilter. The values occur alone, the adjacent ones have value zero (Listing 1.1). If this situation occurs, there is a small cube mesh built around this voxel (Figure \ref{fig:marching-cubes-1-point}). Similar case is with two voxels with non-zero value (Figure \ref{fig:marching-cubes-2-points}).
 
-TODO : -	Build the skeleton using the vtkTubeFilter (single tube should be used for a single branch. A branch in the skeleton image consists of neighboring voxels that have 2 neighbors (they are part of the path), and start and end voxel (they have either 1 or mode than 2 neighbors in their 3D neighborhood). In order to make a tube, the voxels have to be entered in a SEQUENTIAL order from one (start) voxel to the other (end) voxel).\\
--	How does the skeleton look like? Are the branches smooth? Why?\\
--	Make the branches smooth.\\
+\begin{figure}
+	\centering
+	\includegraphics[scale=0.35]{fig/skeleton-basic-tubed}
+	\caption{Skeleton basic (left) and tubed (right) view.}\label{fig:skeleton-basic-tubed}
+\end{figure}
 
 The tube filter generates a tube around each input line. Therefore we made lines between each of the neighboring voxels in the image. First we had to find each voxel, and connect them branch by branch. Next comes a description of our algorithm to solve that problem.
 
@@ -97,9 +95,16 @@ The algorithm of making polydata out of the skeleton image data is mainly done i
 
 \end{itemize}
 
-After the search, polydata is made by making a polyline for each branch, making a point for each voxel and finally also add the voxel scalars to the polydata. The vtkTubeFilter can then be used to generate a tube around each polyline. This results in a skeleton that is not smooth. That is, the tubed skeleton forms a zick-zack pattern. We believe that the amount of points were too few for making it smooth. \\
+After the search, polydata is made by making a polyline for each branch, making a point for each voxel and finally also add the voxel scalars to the polydata. The vtkTubeFilter can then be used to generate a tube around each polyline. This results in a skeleton that is not smooth. That is, the tubed skeleton forms a zick-zack pattern. We believe that the amount of points were too few for making it smooth.
 
-To make the branches smooth we increased the number of polylines in the skeleton stucture with the vtkSplineFilter, which uniformly divides each line into several lines. Lines which have coincidental points are ignored by the spline filter, so to avoid that problem those coincidental points are removed by filtering the data through the vtkCleanPolyData filter. \\
+To make the branches smooth we increased the number of polylines in the skeleton stucture with the vtkSplineFilter, which uniformly divides each line into several lines. Lines which have coincidental points are ignored by the spline filter, so to avoid that problem those coincidental points are removed by filtering the data through the vtkCleanPolyData filter.
+
+
+\begin{figure}
+	\centering
+	\includegraphics[scale=0.35]{fig/skeleton-colored-radius}
+	\caption{Skeleton colored (left) and with varying radius (right) view.}\label{fig:skeleton-colored-radius}
+\end{figure}
 
 If the scalars have been added to the polydata, making the radii and color vary by the scalar value of each voxel are simply done by two function calls (vtkTubeFilter::SetVaryRadiusToVaryRadiusByScalar(), vtkPolyDataMapper::ScalarVisibilityOn())
 
@@ -108,22 +113,39 @@ If the scalars have been added to the polydata, making the radii and color vary 
 \begin{figure}
 	\centering
 	\includegraphics[scale=0.4]{fig/volume-rendering}
-	\caption{Volume rendering.}
-	\label{fig:volume-rendering}
+	\caption{Volume rendering.}\label{fig:volume-rendering}
 \end{figure}
 
 The volume visualization was obtained by using vtkVolumeRayCastMapper with vessels\_data.vtk (Figure \ref{fig:volume-rendering}). The crucial part was to set proper RGB points in vtkColorTransferFunction which correspond to luminance values from the VTK file.
 
-Because it is very demanding to do volume visualization it can be useful to change the level of detail (LOD). \\
-We first tried to add a vtkLODActor to the renderer. We set the low- and medium resolution filters of the LODActor, so that the actor would take care of the level of detail automatically as we changed the update rate of the render window interactor. vtkOutlineFilter as a low resolution filter and vtkMaskPoints as a medium resolution filter as were the default filters according to the VTK API. But as we noticed that we could simply change the level of detail with a single function call to the render window interactor without adding a LODActor, we used that functionality instead. There are two function calls to the render window interactor to have in mind here. vtkRenderWindowInteractor::SetDesiredUpdateRate(rate) controls the
-update rate when the camera is used to rotated or zoom in on the image. The default value of this rate is 15 frames/second.
-vtkRenderWindowInteractor::SetStillUpdateRate(rate) is for the update rate when the movement has stopped. When doing the volume rendering there could be a considerable difference in speed when using these two functions, especially if your computer is of an older model.
+Because it is very demanding to do volume visualization it can be useful to change the level of detail (LOD).
+
+We first tried to add a vtkLODActor to the renderer. We set the low- and medium resolution filters of the LODActor, so that the actor would take care of the level of detail automatically as we changed the update rate of the render window interactor. vtkOutlineFilter as a low resolution filter and vtkMaskPoints as a medium resolution filter as were the default filters according to the VTK API. But as we noticed that we could simply change the level of detail with a single function call to the render window interactor without adding a LODActor, we used that functionality instead. There are two function calls to the render window interactor to have in mind here. vtkRenderWindowInteractor::SetDesiredUpdateRate(rate) controls the update rate when the camera is used to rotated or zoom in on the image. The default value of this rate is 15 frames/second. vtkRenderWindowInteractor::SetStillUpdateRate(rate) is for the update rate when the movement has stopped. When doing the volume rendering there could be a considerable difference in speed when using these two functions, especially if your computer is of an older model.
 
 \section{Point picker and distance calculation}
 
+For any skeleton mesh there is a possibility to measure Euclidean distance. An Ecuclidean distance between two voxels can be measured by clicking on skeleton mesh. The result will be displayed in bottom right corner of the window. Reset of selected start voxel can be performed with "x" key.
 
 \section{Visualization}
 
+We distinguish 6 meshes:
+\begin{itemize}
+	\item Key "1": skeleton basic view, by reading directly from file without modifications except vtkContourFilter (Figure~\ref{fig:skeleton-basic-tubed})
+	\item Key "2": skeleton tubed view, as above but vtkTubeFilter is used (Figure~\ref{fig:skeleton-basic-tubed})
+	\item Key "3": skeleton colored view (Figure~\ref{fig:skeleton-colored-radius})
+	\item Key "4": skeleton varying radius view (Figure~\ref{fig:skeleton-colored-radius})
+	\item Key "5": volume visualization (Figure~\ref{fig:volume-rendering})
+	\item Key "6": segmented view (Figure~\ref{fig:segmented-skeleton})
+\end{itemize}
+
+\begin{figure}
+	\centering
+	\includegraphics[scale=0.4]{fig/skeleton-transparent-segmented}
+	\caption{Skeleton view with transparent segmented mesh.}
+	\label{fig:skeleton-transparent-segmented}
+\end{figure}
+
+Additionally, for any skeleton view, a transparent segmented mesh can be shown by pressing "0" key. It will be hidden after pressing "0" again.
 
 \section{Using the Spline Widget}
 
