@@ -1,6 +1,5 @@
 /**************************************************************************
  3D Image class for unsigned short (16-bit unsigned) values
-
  Author: Eric Klaesson, Damian Tarnacki
  File name: "MyImage3D.cpp"
 ***************************************************************************/
@@ -131,61 +130,58 @@ vtkSmartPointer<vtkActor> MyImage3D::GetSkeletonImage()
 }
 
 // Ref: http://public.kitware.com/pipermail/vtkusers/2003-October/020423.html
-vector<vtkSmartPointer<vtkActor>> MyImage3D::GetTubedSkeleton(double radius, bool varyTubeRadiusByScalar, bool colorByScalar)
-{	
-	if (skelReader == NULL)
-	{
-		skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
-		skelReader->SetFileName("vessels_skel.vtk");
-		skelReader->Update();
-	}
-	structuredPoints = skelReader->GetOutput();
-	
-	if(branches.size() == 0) { getImageData(); }
-
-	vector<vtkSmartPointer<vtkActor>> actors;
-
-	for(vector<vector<ushort>> branch : branches)
-	{
-		vtkSmartPointer<vtkPolyData> polyData = makePolyData(&branch);
-		vtkSmartPointer<vtkTubeFilter> tubeFilter = makeTube(polyData, radius, true);
-
-		// vary radius?
-		if (varyTubeRadiusByScalar)
+vtkSmartPointer<vtkActor> MyImage3D::GetTubedSkeleton(double radius, bool varyTubeRadiusByScalar, bool colorByScalar)
+{
+	// if tubes are already present, don't do it again
+	if (tubeFilter == NULL)
+	{	
+		if (skelReader == NULL)
 		{
-			tubeFilter->SetVaryRadiusToVaryRadiusByScalar();
-			tubeFilter->SetRadiusFactor(10);	
+			skelReader = vtkSmartPointer<vtkStructuredPointsReader>::New();
+			skelReader->SetFileName("vessels_skel.vtk");
+			skelReader->Update();
 		}
-		else
-		{
-			tubeFilter->SetVaryRadiusToVaryRadiusOff();
-		}
-		tubeFilter->Update();
+		structuredPoints = skelReader->GetOutput();
 
-		vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-		mapper->SetScalarRange(0,100);
-		mapper->SetInputConnection(tubeFilter->GetOutputPort());
+		vector<vector<vector<ushort>>> branches;
+		getImageData(&branches);
 
-		// colored tubes?
-		if (colorByScalar)
-			mapper->ScalarVisibilityOn();
-		else
-			mapper->ScalarVisibilityOff();
-
-		tubedSkeletonActor = vtkSmartPointer<vtkActor>::New();
-		tubedSkeletonActor->SetMapper(mapper);
-
-		actors.push_back(tubedSkeletonActor);
-
+		vtkSmartPointer<vtkPolyData> polyData = makePolyData(&branches);
+		
+		tubeFilter = makeTube(polyData, radius, true);
 	}
-	
-	return actors;
+
+	// vary radius?
+	if (varyTubeRadiusByScalar)
+	{
+		tubeFilter->SetVaryRadiusToVaryRadiusByScalar();
+		tubeFilter->SetRadiusFactor(10);	
+	}
+	else
+	{
+		tubeFilter->SetVaryRadiusToVaryRadiusOff();
+	}
+	tubeFilter->Update();
+
+	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetScalarRange(0,100);
+	mapper->SetInputConnection(tubeFilter->GetOutputPort());
+
+	// colored tubes?
+	if (colorByScalar)
+		mapper->ScalarVisibilityOn();
+	else
+		mapper->ScalarVisibilityOff();
+
+	tubedSkeletonActor = vtkSmartPointer<vtkActor>::New();
+	tubedSkeletonActor->SetMapper(mapper);
+	return tubedSkeletonActor;
 }
 
 /*
  * Read all voxel positions, branch by branch into 'branches'
  */
-void MyImage3D::getImageData()
+void MyImage3D::getImageData(vector<vector<vector<ushort>>> * branches)
 {
 	// -------------Initializing------------//
 	while (!voxelsToVisit.empty()) { voxelsToVisit.pop(); }
@@ -219,7 +215,7 @@ void MyImage3D::getImageData()
 		getBranch(&endOfBranch, &branch);
 			
 		if (branch.size() > 1)
-			branches.push_back(branch);
+			branches->push_back(branch);
 	}
 }
 
@@ -354,43 +350,46 @@ void MyImage3D::getBranch(vector<ushort> * currentVoxel, vector<vector<ushort> >
 	}	
 }
 
-vtkSmartPointer<vtkPolyData> MyImage3D::makePolyData(vector<vector<ushort>> * branch)
+vtkSmartPointer<vtkPolyData> MyImage3D::makePolyData(vector<vector<vector<ushort>>> * branches)
 {
 	vtkSmartPointer<vtkCellArray> lines = vtkSmartPointer<vtkCellArray>::New();
 	vtkSmartPointer<vtkPolyLine> polyLine;
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 	vtkSmartPointer<vtkFloatArray> scalars = vtkSmartPointer<vtkFloatArray>::New();
+	vector<vector<ushort> > branch;
 	vector<ushort> vox;
 
 	unsigned int b, l, v, branchSize, pointId = 0, scalarId = 0;
 	double x, y, z; 
 	ushort* scalar;
-
-	branchSize = branch->size();
-
-	// Make every branch its own polyline
-	polyLine = vtkSmartPointer<vtkPolyLine>::New();
-	polyLine->GetPointIds()->SetNumberOfIds(branchSize);
-
-	for (l = 0; l < branchSize; l++)
-   	{
-		polyLine->GetPointIds()->SetId(l, pointId);
-		pointId++;
-	}
-  	lines->InsertNextCell(polyLine);
-   	//----------------------------------//
-
-	for (int v = 0; v < branchSize; v++)
+	for (b = 0; b < branches->size(); b++)
 	{
-		vox = branch->at(v);
-		x = (double)vox.at(0); y = (double)vox.at(1); z = (double)vox.at(2);
+		branch = branches->at(b);
+		branchSize = branch.size();
+
+		// Make every branch its own polyline
+		polyLine = vtkSmartPointer<vtkPolyLine>::New();
+		polyLine->GetPointIds()->SetNumberOfIds(branchSize);
+
+		for (l = 0; l < branchSize; l++)
+   		{
+			polyLine->GetPointIds()->SetId(l, pointId);
+			pointId++;
+		}
+   		lines->InsertNextCell(polyLine);
+   		//----------------------------------//
+
+		for (int v = 0; v < branchSize; v++)
+		{
+			vox = branch.at(v);
+			x = (double)vox.at(0); y = (double)vox.at(1); z = (double)vox.at(2);
 			
-		points->InsertNextPoint(x, y, z);
+			points->InsertNextPoint(x, y, z);
 			
-		scalar = static_cast<ushort*>(structuredPoints->GetScalarPointer(x, y, z));
-		scalars->InsertTuple1(scalarId, (double) scalar[0]); scalarId++;
-	}
-		
+			scalar = static_cast<ushort*>(structuredPoints->GetScalarPointer(x, y, z));
+			scalars->InsertTuple1(scalarId, (double) scalar[0]); scalarId++;
+		}
+	}	
 
 	vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
 	polyData->SetPoints(points);
@@ -409,7 +408,7 @@ vtkSmartPointer<vtkTubeFilter> MyImage3D::makeTube(vtkSmartPointer<vtkPolyData> 
 		// Make the tubed skeleton smoother with the spline filter.
 		vtkSmartPointer<vtkSplineFilter> splinedPolyData = vtkSmartPointer<vtkSplineFilter>::New(); 
 		splinedPolyData->SetInputData(polyData);
-		splinedPolyData->SetNumberOfSubdivisions(polyData->GetPoints()->GetNumberOfPoints()*4);
+		splinedPolyData->SetNumberOfSubdivisions(polyData->GetPoints()->GetNumberOfPoints()/20);
 		splinedPolyData->Update();
 		
 		// Clean polylines who have coincident points. Otherwise some normals cannot be computed.
