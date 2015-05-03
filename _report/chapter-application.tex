@@ -115,7 +115,7 @@ If the scalars have been added to the polydata, making the radii and color vary 
 
 The volume visualization was obtained by using vtkVolumeRayCastMapper with vessels\_data.vtk (Figure \ref{fig:volume-rendering}). The crucial part was to set proper RGB points in vtkColorTransferFunction which correspond to luminance values from the VTK file.
 
-Because it is very demanding to do volume visualization it can be useful to change the level of detail (LOD). There are two function calls to the render window interactor to have in mind here. vtkRenderWindowInteractor::SetDesiredUpdateRate(rate) controls the update rate when the camera is used to rotated or zoom in on the image. vtkRenderWindowInteractor::SetStillUpdateRate(rate) is for the update rate when the movement has stopped. When doing the volume rendering there could be a considerable difference in speed when using these two functions, especially if a computer does not have enough computing resources.
+Because it is very demanding to do volume visualization it can be useful to change the level of detail (LOD). There are two function calls to the render window interactor to have in mind here. vtkRenderWindowInteractor::SetDesiredUpdateRate(rate) controls the update rate when the camera is used to rotated or zoom in on the image. vtkRenderWindowInteractor::SetStillUpdateRate(rate) is for the update rate when the movement has stopped. When doing the volume rendering there could be a considerable difference in speed when using these two functions, especially if a computer does not have enough computing resources. Changes of LOD are connected to mouse events: when the left button is clicked and released.
 
 \section{Point picker and distance calculation}
 
