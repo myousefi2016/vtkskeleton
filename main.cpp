@@ -43,6 +43,8 @@ vtkSmartPointer<vtkVolume> volume;
 vtkSmartPointer<vtkActor> segmActor, outlineActor;
 vtkSmartPointer<vtkActor> skelActor, skelTubedActor, skelColoredActor, skelVaryingRadiiActor;
 
+vector<vtkSmartPointer<vtkActor>> actors;
+
 // Menu
 vtkSmartPointer<vtkTextActor> menuCommands, menuVessels, menuLoading, menuDistance;
 
@@ -257,19 +259,23 @@ void loadFile(VesselFile type)
 
 		case SkeletonTubed: 
 			renderWindow->SetWindowName("Skeleton Visualization - Skeleton as tubes");
-			skelTubedActor = image.GetTubedSkeleton(image.tubeRadius, false, false);
-			renderer->AddActor(skelTubedActor);
+			actors = image.GetTubedSkeleton(image.tubeRadius, false, false);
+			
+			for(vtkSmartPointer<vtkActor> a : actors)
+			{
+				renderer->AddActor(a);
+			}
 			break;
 
 		case SkeletonColored:
 			renderWindow->SetWindowName("Skeleton Visualisation - Colored skeleton");
-			skelColoredActor = image.GetTubedSkeleton(image.tubeRadius, false, true);
+			image.GetTubedSkeleton(image.tubeRadius, false, true);
 			renderer->AddActor(skelColoredActor);
 			break;
 
 		case SkeletonVaryingRadii:
 			renderWindow->SetWindowName("Skeleton Visualisation - Skeleton with varying tube radii");
-			skelVaryingRadiiActor = image.GetTubedSkeleton(image.tubeRadius, true, false);
+			image.GetTubedSkeleton(image.tubeRadius, true, false);
 			renderer->AddActor(skelVaryingRadiiActor);
 			break;
 

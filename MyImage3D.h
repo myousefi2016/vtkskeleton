@@ -73,7 +73,6 @@ class MyImage3D
 {
 	vtkSmartPointer<vtkStructuredPointsReader> dataReader, segmReader, skelReader;
 	vtkSmartPointer<vtkStructuredPoints> structuredPoints;
-	vtkSmartPointer<vtkTubeFilter> tubeFilter = NULL;
 	vtkSmartPointer<vtkPolyDataMapper> dataMapper, segmMapper, skelMapper, outlineMapper;
 	vtkSmartPointer<vtkActor> dataActor = NULL, segmActor = NULL, skelActor = NULL, outlineActor = NULL, tubedSkeletonActor = NULL;
 	vtkSmartPointer<vtkVolume> raycastVolume = NULL;
@@ -86,7 +85,7 @@ class MyImage3D
 	void findVoxelNeighbors(vector<ushort> * currentVoxel, vector<vector<ushort> > * neighbors);
 	void getBranch(vector<ushort> * currentVoxel, vector<vector<ushort>> * branch);
 	
-	vtkSmartPointer<vtkPolyData> makePolyData(vector<vector<vector<ushort> > >* branches);
+	vtkSmartPointer<vtkPolyData> makePolyData(vector<vector<ushort> > * branch);
 	vtkSmartPointer<vtkTubeFilter> makeTube(vtkSmartPointer<vtkPolyData> polyData, double radius, bool makeSmooth);
 	
 	// Additional helper functions
@@ -121,7 +120,7 @@ class MyImage3D
 		vtkSmartPointer<vtkActor> GetSegmentedImage();
 		vtkSmartPointer<vtkActor> GetSegmentedOutline();
 		vtkSmartPointer<vtkActor> GetSkeletonImage();
-		vtkSmartPointer<vtkActor> GetTubedSkeleton(double tubeRadius, bool varyTubeRadiusByScalar, bool colorByScalar);
+		vector<vtkSmartPointer<vtkActor>> GetTubedSkeleton(double tubeRadius, bool varyTubeRadiusByScalar, bool colorByScalar);
 
 		// Return access to the reader, for imagePlanesWidget
 		vtkSmartPointer<vtkStructuredPointsReader> GetSegmentedImageReader();
