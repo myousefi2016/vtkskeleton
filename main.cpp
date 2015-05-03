@@ -40,9 +40,7 @@ vtkSmartPointer<vtkImagePlaneWidget> planeWidget;
 
 vtkSmartPointer<vtkLODActor> lodActor = NULL;
 vtkSmartPointer<vtkVolume> volume;
-vtkSmartPointer<vtkActor> segmActor, outlineActor;
-vtkSmartPointer<vtkActor> skelActor, skelTubedActor, skelColoredActor, skelVaryingRadiiActor;
-
+vtkSmartPointer<vtkActor> segmActor, outlineActor, skelActor; 
 vector<vtkSmartPointer<vtkActor>> actors;
 
 // Menu
@@ -162,6 +160,34 @@ void renderVTK()
 	renderWindowInteractor->Start();
 }
 
+void setSplineWidget() // Nothing in this function works yet...
+{
+	// source: http://www.vtk.org/Wiki/VTK/Examples/Cxx/Interaction/Picking
+	/*vtkSmartPointer<vtkPropPicker>  picker = renderWindowInteractor->GetPicker();//vtkSmartPointer<vtkPropPicker>::New();
+
+	int* clickPos = renderWindowInteractor->GetEventPosition();
+	picker->Pick(clickPos[0], clickPos[1], 0, renderer);
+	vtkSmartPointer<vtkActor> actor = picker->GetActor();
+	vtkSmartPointer<vtkPolyDataMapper> mapper = actor->GetMapper();
+	vtkSmartPointer<vtkPolyData> polyData = mapper->GetInput();
+
+	vtkSmartPointer<vtkPoints> points = polyData->GetPoints();
+
+	for(vtkSmartPointer<vtkPoint> p : points)
+	{
+		cout << "Points of branch: " << p[0] << ", " << p[1] << ", " << p[2] << endl;
+	}*/
+
+	/*vtkSmartPointer<vtkSplineWidget> splineWidget = vtkSmartPointer<vtkSplineWidget>::New();
+	splineWidget->SetInteractor(renderWindowInteractor);
+	splineWidget->On();
+
+	// when picking a branch.
+	splineWidget->SetNumberOfHandles(5);
+	//splineWidget->SetHandlePosition(int handle, double x, double y, double z);*/
+
+}
+
 /*
  * Prepare menu and info messages
  */
@@ -228,11 +254,11 @@ void loadVessels(VesselFile next)
 	renderer->RemoveActor(outlineActor);
 	renderer->RemoveVolume(volume);
 
+	for(vtkSmartPointer<vtkActor> a : actors)
+	{ renderer->RemoveActor(a); }
+
 	// remove skeletons only if next one is volume/segmented
 	renderer->RemoveActor(skelActor);
-	renderer->RemoveActor(skelTubedActor);
-	renderer->RemoveActor(skelColoredActor);
-	renderer->RemoveActor(skelVaryingRadiiActor);
 
 	renderWindowInteractor->SetDesiredUpdateRate(15); // Default value == 15
 	renderWindowInteractor->SetStillUpdateRate(0.0001); // Default value == 0.0001
@@ -260,23 +286,19 @@ void loadFile(VesselFile type)
 		case SkeletonTubed: 
 			renderWindow->SetWindowName("Skeleton Visualization - Skeleton as tubes");
 			actors = image.GetTubedSkeleton(image.tubeRadius, false, false);
-			
-			for(vtkSmartPointer<vtkActor> a : actors)
-			{
-				renderer->AddActor(a);
-			}
+			for(vtkSmartPointer<vtkActor> a : actors) { renderer->AddActor(a); }
 			break;
 
 		case SkeletonColored:
 			renderWindow->SetWindowName("Skeleton Visualisation - Colored skeleton");
-			image.GetTubedSkeleton(image.tubeRadius, false, true);
-			renderer->AddActor(skelColoredActor);
+			actors = image.GetTubedSkeleton(image.tubeRadius, false, true);
+			for(vtkSmartPointer<vtkActor> a : actors) { renderer->AddActor(a); }
 			break;
 
 		case SkeletonVaryingRadii:
 			renderWindow->SetWindowName("Skeleton Visualisation - Skeleton with varying tube radii");
-			image.GetTubedSkeleton(image.tubeRadius, true, false);
-			renderer->AddActor(skelVaryingRadiiActor);
+			actors = image.GetTubedSkeleton(image.tubeRadius, true, false);
+			for(vtkSmartPointer<vtkActor> a : actors) { renderer->AddActor(a); }
 			break;
 
 		case Volume:

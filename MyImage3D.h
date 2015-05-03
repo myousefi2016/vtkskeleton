@@ -54,6 +54,10 @@
 #include <vtkCleanPolyData.h>
 #include <vtkSplineFilter.h>
 
+#include <vtkSplineWidget.h>
+#include <vtkSplineWidget2.h>
+#include <vtkPropPicker.h>
+
 using namespace std;
 
 typedef unsigned short ushort;
@@ -77,9 +81,10 @@ class MyImage3D
 	vtkSmartPointer<vtkActor> dataActor = NULL, segmActor = NULL, skelActor = NULL, outlineActor = NULL, tubedSkeletonActor = NULL;
 	vtkSmartPointer<vtkVolume> raycastVolume = NULL;
 	vtkSmartPointer<vtkLODActor> lodActor = NULL;
+	vector<vector<vector<ushort>>> branches;
 
 	// Help functions for the public function GetTubedSkeleton()
-	void getImageData(vector<vector<vector<ushort> > > * branches);
+	void getImageData();
 	bool findNextVoxel(vector<ushort> * vox);
 	void findEndOfBranch(vector<ushort> * currentVoxel, vector<ushort> * endOfBranch);
 	void findVoxelNeighbors(vector<ushort> * currentVoxel, vector<vector<ushort> > * neighbors);
