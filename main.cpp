@@ -77,14 +77,33 @@ double distanceStop[3];
 
 // Define interaction style
 // Ref: http://www.vtk.org/Wiki/VTK/Examples/Cxx/Interaction/PointPicker
-class PointPickerStyle : public vtkInteractorStyleTrackballCamera
+class MouseInteractorStyle : public vtkInteractorStyleTrackballCamera
 {
 	public:
-		static PointPickerStyle* New();
-		vtkTypeMacro(PointPickerStyle, vtkInteractorStyleTrackballCamera);
+		static MouseInteractorStyle* New();
+		vtkTypeMacro(MouseInteractorStyle, vtkInteractorStyleTrackballCamera);
+ 
+		virtual void OnLeftButtonDown()
+		{
+			if (image.currentVessel == Volume)
+			{
+				renderWindowInteractor->SetDesiredUpdateRate(20); // Update rate in moving the camera view
+				renderWindowInteractor->SetStillUpdateRate(20); // Update rate in the still view
+				vtkInteractorStyleTrackballCamera::OnLeftButtonDown(); // forward events
+				return;
+			}
+		}
  
 		virtual void OnLeftButtonUp() 
 		{
+			if (image.currentVessel == Volume)
+			{
+				renderWindowInteractor->SetDesiredUpdateRate(15); // Default value == 15
+				renderWindowInteractor->SetStillUpdateRate(0.0001); // Default value == 0.0001
+				vtkInteractorStyleTrackballCamera::OnLeftButtonUp(); // forward events
+				return;
+			}
+
 			// only for skeleton images
 			if (!isSkeleton(image.currentVessel)) {
 			
@@ -114,7 +133,7 @@ class PointPickerStyle : public vtkInteractorStyleTrackballCamera
 		}
 };
 
-vtkStandardNewMacro(PointPickerStyle);
+vtkStandardNewMacro(MouseInteractorStyle);
 
 int main(int, char *[])
 {
@@ -144,14 +163,15 @@ void initVTK()
 	vtkSmartPointer<vtkCallbackCommand> keypressCallback = vtkSmartPointer<vtkCallbackCommand>::New();
 	keypressCallback->SetCallback(KeypressCallbackFunction);
 	renderWindowInteractor->AddObserver(vtkCommand::KeyPressEvent, keypressCallback);
+	
+	// Handle mouse events
+	vtkSmartPointer<MouseInteractorStyle> style = vtkSmartPointer<MouseInteractorStyle>::New();
+	renderWindowInteractor->SetInteractorStyle(style);
 
 	// Prepare menu
 	prepareMenu();
 
 	renderWindowInteractor->SetRenderWindow(renderWindow);
-
-	vtkSmartPointer<PointPickerStyle> style = vtkSmartPointer<PointPickerStyle>::New();
-	renderWindowInteractor->SetInteractorStyle(style);
 }
 
 void renderVTK()
@@ -232,9 +252,6 @@ void loadVessels(VesselFile next)
 	renderer->RemoveActor(skelColoredActor);
 	renderer->RemoveActor(skelVaryingRadiiActor);
 
-	renderWindowInteractor->SetDesiredUpdateRate(15); // Default value == 15
-	renderWindowInteractor->SetStillUpdateRate(0.0001); // Default value == 0.0001
-
 	loadFile(next); // Load file
 
 	toggleLoading(); // Loading off
@@ -277,9 +294,6 @@ void loadFile(VesselFile type)
 			renderWindow->SetWindowName("Skeleton Visualisation - Volume visualization");
 			volume = image.GetVolume();
 			renderer->AddVolume(volume);
-
-			renderWindowInteractor->SetDesiredUpdateRate(20); // Update rate in moving the camera view
-			renderWindowInteractor->SetStillUpdateRate(20); // Update rate in the still view
 			break;
 
 		case Segmented:
@@ -301,10 +315,7 @@ void loadFile(VesselFile type)
 void setupSegmentedImagePlanes()
 {
 	if (image.planes[0] != NULL)
-	{
-		cout << "juz ustawione" << endl;
 		return;
-	}
 
 	vtkSmartPointer<vtkCellPicker> picker = vtkSmartPointer<vtkCellPicker>::New();
 	picker->SetTolerance(0.005);
@@ -365,58 +376,12 @@ void addToDistance(int point[3])
 		stringstream stream;
 		stream << "Distance: " << distance;
 		setDistanceText(stream.str());
-
-		//drawDistanceLine();
 	}
 }
 
 void setDistanceText(string text)
 {
 	menuDistance->SetInput(text.c_str());
-	refreshWindow();
-}
-
-// not working properly
-void drawDistanceLine()
-{
-	//cout << "drawing line" << endl;
-	vtkSmartPointer<vtkPolyLine> polyLine = vtkSmartPointer<vtkPolyLine>::New();
-	polyLine->GetPointIds()->SetNumberOfIds(2);
-	polyLine->GetPointIds()->SetId(0, 0); // start
-	polyLine->GetPointIds()->SetId(1, 1); // stop
-
-	// Create a vtkPoints object and store the points in it
-	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-	points->InsertNextPoint(distanceStart);
-	points->InsertNextPoint(distanceStop);
-	
-	// Create a cell array to store the line
-	vtkSmartPointer<vtkCellArray> cells = vtkSmartPointer<vtkCellArray>::New();
-	cells->InsertNextCell(polyLine);
-
-	// Create a polydata to store everything in
-	vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
-	polyData->SetPoints(points); // Add the points to the dataset
-	polyData->SetLines(cells); // Add the lines to the dataset
-
-	vtkSmartPointer<vtkTubeFilter> tube = vtkSmartPointer<vtkTubeFilter>::New();
-	tube->SetInputData(polyData);
-
-	tube->SetNumberOfSides(20);
-	tube->SetRadiusFactor(20);
-	tube->SetVaryRadiusToVaryRadiusByScalar();
-	tube->SetRadius(5);
-	tube->CappingOn();
-	tube->Update();
-
-	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	mapper->SetInputConnection(tube->GetOutputPort());
-	mapper->ScalarVisibilityOn();
-
-	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
-	actor->SetMapper(mapper);
-
-	renderer->AddActor(actor);
 	refreshWindow();
 }
 
@@ -477,7 +442,6 @@ void toggleSegmentedTransparent()
 	if (!isSkeleton(image.currentVessel))
 		return;
 	
-	cout << "toggleSegmentedTransparent" << endl;
 	if (!segmentedTransparentVisible)
 	{
 		toggleLoading(); // Loading on
@@ -553,8 +517,6 @@ void KeypressCallbackFunction(vtkObject* caller, long unsigned int vtkNotUsed(ev
 
 	if (key == "i")
 		toggleCommandsMenu();
-
-	cout << "pressed " << key << endl;
 
 	// Segmented image
 	if (image.currentVessel == Segmented)

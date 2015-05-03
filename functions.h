@@ -11,7 +11,6 @@ bool isEmpty(double point[3]);
 
 // UI functions
 void setDistanceText(string text);
-void drawDistanceLine();
 void resetDistancePoints();
 double computeDistance(double a[3], double b[3]);
 void toggleCommandsMenu();
