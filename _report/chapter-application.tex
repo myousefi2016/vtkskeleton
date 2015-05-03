@@ -1,5 +1,5 @@
 \chapter{Results}
-The following structure corresponds to project instruction.
+The following structure corresponds to the project instructions.
 
 % Example: insert image
 % \includegraphics{fig/NameOfTheFileWithoutExtension}
@@ -50,7 +50,7 @@ A class vtkImagePlaneWidget was used to show the cut from the segmented data (Fi
 \begin{figure}
 	\centering
 	\includegraphics[scale=0.6]{fig/segmented-skeleton}
-	\caption{vtkContourFilter used to render segmented and skeleton mesh.}
+	\caption{vtkContourFilter used to render segmented and skeleton images.}
 	\label{fig:segmented-skeleton}
 \end{figure}
 
@@ -82,19 +82,26 @@ TODO : -	Build the skeleton using the vtkTubeFilter (single tube should be used 
 -	How does the skeleton look like? Are the branches smooth? Why?\\
 -	Make the branches smooth.\\
 
-\begin{figure}
-	\centering
-	\includegraphics[scale=0.4]{fig/skeleton-basic-tubed}
-	\caption{Skeleton basic (left) and tubed (right) view.}
-	\label{fig:skeleton-basic-tubed}
-\end{figure}
+The tube filter generates a tube around each input line. Therefore we made lines between each of the neighboring voxels in the image. First we had to find each voxel, and connect them branch by branch. Next comes a description of our algorithm to solve that problem.
 
-\begin{figure}
-	\centering
-	\includegraphics[scale=0.4]{fig/skeleton-colored-radius}
-	\caption{Skeleton colored (left) and with varying radius (right) view.}
-	\label{fig:skeleton-colored-radius}
-\end{figure}
+The algorithm of making polydata out of the skeleton image data is mainly done in 4 steps.
+\begin{itemize}
+
+\item Find first a voxel of the image, by greedily searching though the image voxel by voxel. Every voxel has a scalar value x, where x = 0 means that the voxel is not part of the image and x > 0, means that it is. 
+
+\item Then find the end of the branch of that voxel. This is done by travelling from neighbor to neighbor until an end of the branch is found. In the search for neighbors of one voxel, the 26 surrounding voxels is investigated. Only unvisited neighbors are considered.
+
+\item Starting with the end of the branch, the complete branch is found, while marking every found voxel visited. An end of a branch has either one neighbor or more than two neighbors. When an end that has more than two neighbors is found, the unvisited neighbors are saved to a stack S.
+
+\item Take a voxel from stack S and repeat step 3. If S is empty, go to step 1. The algorithm finishes when the search at step 1 reaches the last voxel of the image.
+
+\end{itemize}
+
+After the search, polydata is made by making a polyline for each branch, making a point for each voxel and finally also add the voxel scalars to the polydata. The vtkTubeFilter can then be used to generate a tube around each polyline. This results in a skeleton that is not smooth. That is, the tubed skeleton forms a zick-zack pattern. We believe that the amount of points were too few for making it smooth. \\
+
+To make the branches smooth we increased the number of polylines in the skeleton stucture with the vtkSplineFilter, which uniformly divides each line into several lines. Lines which have coincidental points are ignored by the spline filter, so to avoid that problem those coincidental points are removed by filtering the data through the vtkCleanPolyData filter. \\
+
+If the scalars have been added to the polydata, making the radii and color vary by the scalar value of each voxel are simply done by two function calls (vtkTubeFilter::SetVaryRadiusToVaryRadiusByScalar(), vtkPolyDataMapper::ScalarVisibilityOn())
 
 \section{Volume visualization}
 
@@ -107,33 +114,16 @@ TODO : -	Build the skeleton using the vtkTubeFilter (single tube should be used 
 
 The volume visualization was obtained by using vtkVolumeRayCastMapper with vessels\_data.vtk (Figure \ref{fig:volume-rendering}). The crucial part was to set proper RGB points in vtkColorTransferFunction which correspond to luminance values from the VTK file.
 
-Because rendering requires complex computation, the image is blurred while rotating and it regains the focus when rotation stops.
+Because it is very demanding to do volume visualization it can be useful to change the level of detail (LOD). \\
+We first tried to add a vtkLODActor to the renderer. We set the low- and medium resolution filters of the LODActor, so that the actor would take care of the level of detail automatically as we changed the update rate of the render window interactor. vtkOutlineFilter as a low resolution filter and vtkMaskPoints as a medium resolution filter as were the default filters according to the VTK API. But as we noticed that we could simply change the level of detail with a single function call to the render window interactor without adding a LODActor, we used that functionality instead. There are two function calls to the render window interactor to have in mind here. vtkRenderWindowInteractor::SetDesiredUpdateRate(rate) controls the
+update rate when the camera is used to rotated or zoom in on the image. The default value of this rate is 15 frames/second.
+vtkRenderWindowInteractor::SetStillUpdateRate(rate) is for the update rate when the movement has stopped. When doing the volume rendering there could be a considerable difference in speed when using these two functions, especially if your computer is of an older model.
 
 \section{Point picker and distance calculation}
 
-For any skeleton mesh there is a possibility to measure Euclidean distance. An Ecuclidean distance between two voxels can be measured by clicking on skeleton mesh. The result will be displayed in bottom right corner of the window. Reset of selected start voxel can be performed with "x" key.
 
 \section{Visualization}
 
-We distinguish 6 meshes:
-\begin{itemize}
-	\item Key "1": skeleton basic view, by reading directly from file without modifications except vtkContourFilter (Figure~\ref{fig:skeleton-basic-tubed})
-	\item Key "2": skeleton tubed view, as above but vtkTubeFilter is used (Figure~\ref{fig:skeleton-basic-tubed})
-	\item Key "3": skeleton colored view (Figure~\ref{fig:skeleton-colored-radius})
-	\item Key "4": skeleton varying radius view (Figure~\ref{fig:skeleton-colored-radius})
-	\item Key "5": volume visualization (Figure~\ref{fig:volume-rendering})
-	\item Key "6": segmented view (Figure~\ref{fig:segmented-skeleton})
-\end{itemize}
-
-\begin{figure}
-	\centering
-	\includegraphics[scale=0.4]{fig/skeleton-transparent-segmented}
-	\caption{Skeleton view with transparent segmented mesh.}
-	\label{fig:skeleton-transparent-segmented}
-\end{figure}
-
-
-Additionally, for any skeleton view, a transparent segmented mesh can be shown by pressing "0" key. It will be hidden after pressing "0" again.
 
 \section{Using the Spline Widget}
 
