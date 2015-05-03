@@ -82,7 +82,7 @@ The visualized skeleton path is not continuous due to provided data that was pro
 
 The tube filter generates a tube around each input line. Therefore we made lines between each of the neighboring voxels in the image. First we had to find each voxel, and connect them branch by branch. Next comes a description of our algorithm to solve this problem.
 
-The algorithm of making polydata out of the skeleton image data is mainly done in 4 steps:
+The algorithm of finding and saving the branches of the image is mainly done in 4 steps:
 \begin{enumerate}
 	\item First find a voxel of the image, by greedily searching through the image voxel by voxel. Every voxel has a scalar value x, where x = 0 means that the voxel is not part of the image and x > 0, means that it is. 
 
@@ -90,7 +90,7 @@ The algorithm of making polydata out of the skeleton image data is mainly done i
 
 	\item Starting with the end of the branch, the complete branch is found, while marking every found voxel visited. An end of a branch has either one neighbor or more than two neighbors. When an end that has more than two neighbors is found, the unvisited neighbors are saved to a stack S.
 
-	\item Take a voxel from stack S and repeat step 3. If S is empty, go to step 1. The algorithm finishes when the search at step 1 reaches the last voxel of the image.
+	\item Take a voxel from stack S and repeat step 3. If stack S is empty, go to step 1. The algorithm finishes when the search at step 1 reaches the last voxel of the image.
 \end{enumerate}
 
 After the search, polydata is made by making a polyline for each branch, making a point for each voxel and finally add the voxel scalars to the polydata. The vtkTubeFilter can then be used to generate a tube around each polyline. This results in a skeleton that is not smooth. That is, the tubed skeleton forms a zig-zag pattern. We believe that the amount of points were too few for making it smooth.
@@ -115,7 +115,7 @@ If the scalars have been added to the polydata, making the radii and color vary 
 
 The volume visualization was obtained by using vtkVolumeRayCastMapper with vessels\_data.vtk (Figure \ref{fig:volume-rendering}). The crucial part was to set proper RGB points in vtkColorTransferFunction which correspond to luminance values from the VTK file.
 
-Because it is very demanding to do volume visualization it can be useful to change the level of detail (LOD). There are two function calls to the render window interactor to have in mind here. vtkRenderWindowInteractor::SetDesiredUpdateRate(rate) controls the update rate when the camera is used to rotated or zoom in on the image. The default value of this rate is 15 frames/second. vtkRenderWindowInteractor::SetStillUpdateRate(rate) is for the update rate when the movement has stopped. When doing the volume rendering there could be a considerable difference in speed when using these two functions, especially if a computer does not have enough computing resources.
+Because it is very demanding to do volume visualization it can be useful to change the level of detail (LOD). There are two function calls to the render window interactor to have in mind here. vtkRenderWindowInteractor::SetDesiredUpdateRate(rate) controls the update rate when the camera is used to rotated or zoom in on the image. vtkRenderWindowInteractor::SetStillUpdateRate(rate) is for the update rate when the movement has stopped. When doing the volume rendering there could be a considerable difference in speed when using these two functions, especially if a computer does not have enough computing resources.
 
 \section{Point picker and distance calculation}
 
@@ -143,4 +143,5 @@ We distinguish 6 meshes:
 Additionally, for any skeleton view, a transparent segmented mesh can be shown by pressing "0" key. It will be hidden after pressing "0" again.
 
 \section{Using the Spline Widget}
+Before we tried to implement the spline widget we had one actor for the whole image, but to be able to pick only one single branch with the default picker we had to map each branch to one actor. We were able to pick one single branch, get the actor mapped to the branch and get a hold of all the points of the branch. But before the deadline we did not manage to figure out how to replace the branch with a spline widget.
 
