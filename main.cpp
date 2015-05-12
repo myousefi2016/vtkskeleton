@@ -92,6 +92,8 @@ class MouseInteractorStyle : public vtkInteractorStyleTrackballCamera
 				vtkInteractorStyleTrackballCamera::OnLeftButtonDown(); // forward events
 				return;
 			}
+
+			vtkInteractorStyleTrackballCamera::OnLeftButtonDown(); // forward events
 		}
  
 		virtual void OnLeftButtonUp() 
